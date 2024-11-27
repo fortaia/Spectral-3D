@@ -30,13 +30,12 @@ contains
     ! FFTD{ u }( 0 ) IS NOT MODIFIED HERE, BUT
     ! IN ROUTINE trunc.
     ! ================================================
+    type(decomp_info), pointer :: sp
     
     integer :: i,j,k,start
     real(mytype) :: wave_sq,wv1,wv2,wv3,sq_w2,sq_w3
-    real(mytype), allocatable, dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
-    complex(mytype), allocatable, dimension (:,:,:), intent(INOUT) :: u,v,w
-    
-    type(decomp_info), pointer :: sp
+    real(mytype), dimension(:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: u,v,w
     !!!!!!!!!!!!!!!!!!! Variable Declaration END !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     start=sp%zst(1)
@@ -96,13 +95,13 @@ contains
     ! ====================================================================
     use m_glob_params, only: RNU
     
+    type(decomp_info), pointer :: sp
+    
     integer :: i,j,k
     real(mytype) :: visc_ksq,dummy2,dummy3
-    real(mytype), allocatable, dimension (:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
-    complex(mytype), allocatable, dimension (:,:,:), intent(IN) :: u,v,w
-    complex(mytype), allocatable, dimension (:,:,:), intent(INOUT) :: rhs_x,rhs_y,rhs_z
-    
-    type(decomp_info), pointer :: sp
+    real(mytype), dimension (:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
+    complex(mytype), dimension (sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(IN) :: u,v,w
+    complex(mytype), dimension (sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: rhs_x,rhs_y,rhs_z
     
     !------------ Start subroutine ----------------------------
     
@@ -135,19 +134,19 @@ contains
     
     use decomp_2d_fft
     
+    type(decomp_info), pointer :: ph,sp
+    
     integer :: i,j,k
     integer, allocatable, dimension(:,:), intent(IN) :: trunc_index
     real(mytype) :: dummy1
     real(mytype), intent(IN) :: normaliz
-    real(mytype), allocatable, dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3
+    real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3
     ! In Physical space: Working arrays
-    real(mytype), allocatable, dimension(:,:,:), intent(INOUT) :: ur,vr,wr
-    real(mytype), allocatable, dimension(:,:,:) :: work_xph,work_yph,work_zph
+    real(mytype), dimension(ph%xst(1):,ph%xst(2):,ph%xst(3):), intent(INOUT) :: ur,vr,wr
+    real(mytype), dimension(ph%xst(1):,ph%xst(2):,ph%xst(3):) :: work_xph,work_yph,work_zph
     ! In Spectral space
-    complex(mytype), allocatable, dimension(:,:,:), intent(INOUT) :: u,v,w
-    complex(mytype), allocatable, dimension(:,:,:) :: work_xsp1,work_ysp1,work_zsp1
-    
-    type(decomp_info), pointer :: ph,sp
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: u,v,w
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: work_xsp1,work_ysp1,work_zsp1
     
     !  ======================================================
     !  USING PSEUDO-SPECTRAL METHODS, THIS ROUTINE COMPUTES
@@ -184,6 +183,14 @@ contains
     !                    |
     !
     !  ======================================================
+    ! Velocity in physical space
+    
+    work_xsp1=u
+    call decomp_2d_fft_3d(work_xsp1,ur)
+    work_xsp1=v
+    call decomp_2d_fft_3d(work_xsp1,vr)
+    work_xsp1=w
+    call decomp_2d_fft_3d(work_xsp1,wr)
     !
     !  FIRST STEP : calculate curl of u
     !                    ->          ->
@@ -195,10 +202,6 @@ contains
     ! SECOND STEP: Put all in the physical space
     !                          -->                   ->
     !   (rhs_x,rhs_y,rhs_z) =  rot(u) ; (ur,vr,wr) = u
-    
-    call decomp_2d_fft_3d(u,ur)
-    call decomp_2d_fft_3d(v,vr)
-    call decomp_2d_fft_3d(w,wr)
     
     call decomp_2d_fft_3d(work_xsp1,work_xph)
     call decomp_2d_fft_3d(work_ysp1,work_yph)
@@ -262,10 +265,10 @@ contains
     real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
     real(mytype) :: w1,w2,w3,w1_s,w2_s,w3_s,normaliz_fs,numerator,denominator,mod_const,k_norm,k_proj
     real(mytype) :: e2(3),e1(2),psi_rnd,two_phi_rnd,theta1,theta2
-    real(mytype), allocatable, dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
+    real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
     complex(mytype) :: xsi1,xsi2,a_rnd,b_rnd
-    complex(mytype), allocatable, dimension(:,:,:), intent(IN) :: u,v,w
-    complex(mytype), allocatable, dimension(:,:,:), intent(INOUT) :: fs_x,fs_y,fs_z
+    complex(mytype), dimension(:,:,:), intent(IN) :: u,v,w
+    complex(mytype), dimension(:,:,:), intent(INOUT) :: fs_x,fs_y,fs_z
     type(decomp_info), pointer :: sp
     
     ! ------------ Start subroutine ------------------
@@ -349,28 +352,27 @@ contains
     use m_utils, only: Dealiasing_trunc
     
     use decomp_2d_fft
-
+    
+    type(decomp_info), pointer :: ph,sp
     
     integer :: i,j,k
     integer, allocatable, dimension(:,:), intent(IN) :: trunc_index
     real(mytype) :: dummy1,dummy2,dummy3,Ru,Rv,Rw,Iu,Iv,Iw,sq_dummy2,sq_dummy3,visc_ksq
     real(mytype), intent(IN) :: normaliz
-    real(mytype), allocatable, dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
+    real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
     ! In Physical space: Working arrays
-    real(mytype), allocatable, dimension(:,:,:), intent(INOUT) :: ur,vr,wr
-    real(mytype), allocatable, dimension (:,:,:), intent(INOUT) :: work_xph,work_yph,work_zph
+    real(mytype), dimension (ph%xst(1):,ph%xst(2):,ph%xst(3):), intent(INOUT) :: ur,vr,wr
+    real(mytype), dimension (ph%xst(1):,ph%xst(2):,ph%xst(3):), intent(INOUT) :: work_xph,work_yph,work_zph
     ! In Spectral space
-    complex(mytype), allocatable, dimension(:,:,:), intent(INOUT) :: u,v,w
-    complex(mytype), allocatable, dimension (:,:,:) :: rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1
-    
-    type(decomp_info), pointer :: ph,sp
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: u,v,w
+    complex(mytype), dimension (sp%zst(1):,sp%zst(2):,sp%zst(3):) :: rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1
     
     !  ======================================================
     !  USING PSEUDO-SPECTRAL METHODS, THIS ROUTINE COMPUTES
     !  THE RIGHT HAND SIDE TERMS OF THE NAVIER-STOKES Eqs.
     !
-    !  FIRST STEP : calculate curl of u
-    !                    ->          ->    +  DISSIPATIVE TERM
+    !  FIRST STEP : calculate curl of u +  DISSIPATIVE TERM
+    !                    ->          ->
     !  (tnx,tny,tnz) = i k  ^  FFTD{ u }
     
     do k=sp%zst(3),sp%zen(3)

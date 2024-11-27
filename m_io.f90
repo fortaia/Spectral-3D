@@ -490,7 +490,7 @@ contains
     use decomp_2d_mpi, only: mytype,nrank,decomp_2d_abort
     use decomp_2d, only: decomp_info
     
-    real(mytype), allocatable, dimension(:,:,:) :: var
+    real(mytype), dimension(:,:,:) :: var
     character(len=*), intent(IN) :: filename
     logical :: file_exists
     type(decomp_info), pointer :: ph
@@ -524,7 +524,7 @@ contains
     use decomp_2d_mpi, only: mytype,nrank,decomp_2d_abort
     use decomp_2d, only: decomp_info
     
-    complex(mytype), allocatable, dimension(:,:,:) :: var
+    complex(mytype), dimension(:,:,:) :: var
     character(len=*), intent(IN) :: filename
     logical :: file_exists
     type(decomp_info), pointer :: sp
@@ -552,7 +552,7 @@ contains
     use decomp_2d_mpi, only: mytype
     use decomp_2d, only: decomp_info
     
-    complex(mytype), allocatable, dimension(:,:,:) :: v1,v2,v3
+    complex(mytype), dimension(:,:,:) :: v1,v2,v3
     character(len=*), intent(IN) :: file_init
     character(len=len(file_init)+3) :: filename
     type(decomp_info), pointer :: sp
@@ -683,7 +683,7 @@ contains
     use decomp_2d, only: decomp_info
     use m_aux_spect, only: Spherical_mult
     
-    complex(mytype), allocatable, dimension(:,:,:), intent(IN) :: u,v,w,fs_x,fs_y,fs_z
+    complex(mytype), dimension(:,:,:), intent(IN) :: u,v,w,fs_x,fs_y,fs_z
     real(mytype) :: fx_sq,fy_sq,fz_sq,fx_u,fy_v,fz_w,u_sq,v_sq,w_sq
     
     type(decomp_info), pointer :: sp

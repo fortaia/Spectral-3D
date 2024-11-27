@@ -22,7 +22,7 @@ contains
     
     use MPI
     
-    real(mytype), allocatable, dimension(:,:,:), intent(IN) :: field1
+    real(mytype), dimension(:,:,:), intent(IN) :: field1
     real(mytype) :: variance
     real(mytype), dimension(2) :: loc_sum,gl_sum
     
@@ -46,7 +46,7 @@ contains
     
     use MPI
     
-    real(mytype), allocatable, dimension(:,:,:), intent(IN) :: field1,field2
+    real(mytype), dimension(:,:,:), intent(IN) :: field1,field2
     real(mytype) :: variance
     real(mytype), dimension(3) :: loc_sum,gl_sum
     
@@ -68,7 +68,7 @@ contains
   
   subroutine Stats_quant_init(ur,vr,wr,Tref)
     
-    real(mytype), allocatable, dimension(:,:,:), intent(IN) :: ur,vr,wr
+    real(mytype), dimension(:,:,:), intent(IN) :: ur,vr,wr
     real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
     real(mytype) :: uprime2,vprime2,wprime2,Vchar
     real(mytype), intent(OUT) :: Tref

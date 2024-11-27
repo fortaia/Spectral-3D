@@ -20,7 +20,7 @@ module m_utils
       integer :: i,j,k
       integer(8) :: count
       integer, allocatable, dimension(:,:), intent(OUT) :: trunc_index
-      real(mytype), allocatable, dimension (:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
+      real(mytype), dimension (:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
       real(mytype) :: kmax,kmax2,wave_sq,sq_w2,sq_w3
       
       type(decomp_info), pointer :: sp
@@ -88,11 +88,13 @@ module m_utils
       use decomp_2d_constants, only: mytype
       use decomp_2d, only: decomp_info
       
+      type(decomp_info), pointer :: sp
+      
       integer :: i,j,k,idx_kmax,start_int,end_int
       integer(8) :: count
       integer, allocatable, dimension(:,:), intent(IN) :: trunc_index
-      complex(mytype), allocatable, dimension(:,:,:), intent(INOUT) :: field1,field2,field3
-      type(decomp_info), pointer :: sp
+      complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: field1,field2,field3
+      
       
       !------------ Start subroutine -------------------
       
@@ -107,7 +109,6 @@ module m_utils
       idx_kmax=size(trunc_index,1)
       
       ! Truncating i-line by line (along - x)
-      
       do count=1,idx_kmax
         i=trunc_index(count,1)
         j=trunc_index(count,2)
@@ -145,7 +146,7 @@ module m_utils
       integer :: errorcode
       real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
       real(mytype) :: cfl_conv, cfl_visc, u_lmax, u_gmax, deltax, dt_conv, dt_visc, dt_cfl_loc, dt_cfl
-      real(mytype), allocatable, dimension(:,:,:), intent(IN) :: ur,vr,wr
+      real(mytype), dimension(:,:,:), intent(IN) :: ur,vr,wr
       
       cfl_conv=0.6_mytype
       cfl_visc=0.5_mytype

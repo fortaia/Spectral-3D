@@ -110,8 +110,14 @@ program Spectral_3D
         print *, " ------------------"
     endif
     
-    ! Read THI_PJET
-    call read_THI_PJET
+    ! ----- Read THI_PJET -------
+    call Read_THI_PJET
+    
+    if (nrank==0) then
+      print *, " ----------------------"
+      print *, "| Initialising 2DECOMP |"
+      print *, " ----------------------"
+    endif
     
     ! 2DECOMP initialization
     periodic_bc=.true.
@@ -124,11 +130,6 @@ program Spectral_3D
     ph => decomp_2d_fft_get_ph()
     sp => decomp_2d_fft_get_sp()
     
-    if (nrank==0) then
-        print *, " ----------------------"
-        print *, "| 2DECOMP Initialised |"
-        print *, " ----------------------"
-    endif
     
     if (nrank==0) then
         

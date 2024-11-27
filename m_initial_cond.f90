@@ -129,8 +129,8 @@ contains
       end do
     enddo
     
-    !    vr=0._mytype
-    !    wr=0._mytype
+    vr=0._mytype
+    wr=0._mytype
   
   
   end subroutine IC_mean_field
@@ -291,7 +291,7 @@ contains
     
     integer :: j,k
     real(mytype) :: y
-    real(mytype), allocatable, dimension(:,:,:) :: field
+    real(mytype), dimension(:,:,:) :: field
     type(decomp_info), pointer :: ph
     
     do k=ph%xst(3),ph%xen(3)

@@ -97,9 +97,12 @@ contains
       ! Writing initial fields
       call Write_3d_velocities(trim(RESDAT)//"_00000",u,v,w,sp)
       ! Calculating initial variables
-      call decomp_2d_fft_3d(u,ur)
-      call decomp_2d_fft_3d(v,vr)
-      call decomp_2d_fft_3d(w,wr)
+      work_xsp1=u
+      call decomp_2d_fft_3d(work_xsp1,ur)
+      work_xsp1=v
+      call decomp_2d_fft_3d(work_xsp1,vr)
+      work_xsp1=w
+      call decomp_2d_fft_3d(work_xsp1,wr)
       
       call Stats_quant_init(ur,vr,wr,tref)
       
@@ -120,9 +123,12 @@ contains
       ! Time start to compute iteration time
       t_start = MPI_WTIME()
       
-      call decomp_2d_fft_3d(u,ur)
-      call decomp_2d_fft_3d(v,vr)
-      call decomp_2d_fft_3d(w,wr)
+      work_xsp1=u
+      call decomp_2d_fft_3d(work_xsp1,ur)
+      work_xsp1=v
+      call decomp_2d_fft_3d(work_xsp1,vr)
+      work_xsp1=w
+      call decomp_2d_fft_3d(work_xsp1,wr)
       
       ! Time step controlled by CFL
       if(icfl==1) then
@@ -212,7 +218,9 @@ contains
     !--------- Writing planes for all ISIMU --------------------------------
     ! Writing 2 planes of U-velocity and Enstrophy
     ! Print U-velocity
-    call decomp_2d_fft_3d(u,ur)
+    work_xsp1=u
+    call decomp_2d_fft_3d(work_xsp1,ur)
+    
     write(iter_string, '(I5.5)') NTMAX
     call decomp_2d_write_plane(1, ur, 'plane_U_'//iter_string//'.raw',&
             opt_iplane=N3G / 2, opt_decomp=ph, opt_reduce_prec=.false.)
@@ -246,7 +254,7 @@ contains
     real(mytype),intent(IN) :: time
     real(mytype) :: kin_en, diss, u_rms_sq, rey_lambda, eta, l_int, kmax_eta, two_third, PI_half
     real(mytype), dimension(N2G/2+1) :: sh_ave,en_spect
-    complex(mytype), allocatable, dimension (:,:,:) :: work_xsp1
+    complex(mytype), dimension (:,:,:) :: work_xsp1
     character(len=5) :: iter_string
     type(decomp_info), pointer :: sp
     
@@ -261,6 +269,7 @@ contains
       en_spect=en_spect/real(count_g,mytype)
       write(iter_string, '(I5.5)') iter
       call Write_ascii('k_Ek_'//iter_string//'.dat',wavenumG1,en_spect)
+      
       ! Average kinetic energy : approximating integral with trapz
       kin_en=sum(en_spect)-0.5_mytype*(en_spect(1)+en_spect(N2G/2+1))
       ! Average Dissipation : approximating integral with trapz (note that wavenumG1(1)=0)
@@ -279,6 +288,7 @@ contains
       ! Average resolution
       kmax_eta = eta * wavenumG1(N2G/2+1) * X0
       call Write_ascii('Time_Ekin_Diss_ReyLam_L_KmaxEta.dat',[time],[kin_en],[diss],[rey_lambda],[l_int],[kmax_eta])
+      
     end if
   
   end subroutine Stat_run
@@ -291,9 +301,9 @@ contains
     integer, allocatable, dimension(:,:), intent(IN) :: trunc_index
     real(mytype), intent(IN) :: const_rk3(5)
     ! In Physical space: Working arrays
-    real(mytype), allocatable, dimension (:,:,:) :: work_xph,work_yph,work_zph
+    real(mytype), dimension (:,:,:) :: work_xph,work_yph,work_zph
     ! In Spectral space
-    complex(mytype), allocatable, dimension (:,:,:) :: rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1
+    complex(mytype), dimension (:,:,:) :: rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1
     
     type(decomp_info), pointer :: ph,sp
     
@@ -357,10 +367,10 @@ contains
     integer, allocatable, dimension(:,:), intent(IN) :: trunc_index
     real(mytype), intent(IN) :: const_rk3(5)
     ! In Physical space: Working arrays
-    real(mytype), allocatable, dimension (:,:,:) :: work_xph,work_yph,work_zph
+    real(mytype), dimension (:,:,:) :: work_xph,work_yph,work_zph
     ! In Spectral space
-    complex(mytype), allocatable, dimension (:,:,:) :: rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1
-    complex(mytype), allocatable, dimension (:,:,:), intent(INOUT) :: fs_x,fs_y,fs_z
+    complex(mytype), dimension (:,:,:) :: rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1
+    complex(mytype), dimension (:,:,:), intent(INOUT) :: fs_x,fs_y,fs_z
     type(decomp_info), pointer :: ph,sp
     
     !-----------------------------------------------------------

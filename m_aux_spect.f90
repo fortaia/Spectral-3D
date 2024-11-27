@@ -120,16 +120,16 @@ contains
     use decomp_2d_mpi, only: mytype
     use decomp_2d, only: decomp_info
     
+    type(decomp_info), pointer :: sp
     integer :: i,j,k,wave
     real(mytype) :: wave_radius,sq_w2,sq_w3,symm_factor
     
     real(mytype), contiguous, dimension(:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
-    complex(mytype), allocatable, dimension(:,:,:), intent(IN) :: in_var
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(IN) :: in_var
     
     integer, dimension(N2G/2+1), intent(OUT) :: count
     real(mytype), dimension(N2G/2+1), intent(OUT) :: out_var
     
-    type(decomp_info), pointer :: sp
     !---------   Subroutine start  ------------------
     
     count = 0
@@ -168,7 +168,7 @@ contains
 
     integer :: ierr
     real(mytype) :: res_loc, res_sph
-    complex(mytype), allocatable, dimension(:,:,:), intent(IN) :: field1,field2
+    complex(mytype), dimension(:,:,:), intent(IN) :: field1,field2
     type(decomp_info), pointer :: sp
     !---------   Subroutine start  ------------------
     
@@ -212,12 +212,13 @@ contains
     use decomp_2d_constants, only: mytype
     use decomp_2d, only: decomp_info
     
+    type(decomp_info), pointer :: sp
+    
     integer :: i,j,k
     real(mytype) :: dummy1,dummy2,dummy3,Ru,Rv,Rw,Iu,Iv,Iw
     real(mytype), dimension(:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3
-    complex(mytype), allocatable, dimension(:,:,:), intent(IN) :: u,v,w
-    complex(mytype), allocatable, dimension(:,:,:), intent(INOUT) :: vortx,vorty,vortz
-    type(decomp_info), pointer :: sp
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(IN) :: u,v,w
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: vortx,vorty,vortz
     
     !---------   Subroutine start  ------------------
     !                                ->   ->
