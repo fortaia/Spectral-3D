@@ -48,8 +48,7 @@ contains
       
       if (nrank==0) then
         print *, "                       "
-        print *, " Fields Initialization "
-        print *, "-------------------------------------"
+        print *, "** Fields Initialization **"
       endif
       
       if(ISIMU==0) then
@@ -138,7 +137,7 @@ contains
   ! Random noise to convolute with the mean profile
   subroutine Noise(ph,sp)
     
-    use m_utils, only: Random_number_gen
+    use m_utils, only: Random_number_gen_init
     use m_aux_phys, only: Variance_ph
     use m_aux_spect, only : Wavenum
     
@@ -184,9 +183,15 @@ contains
     ! Used constants
     
     s1 = (NSLOPE1-2.0_mytype) / 2.0_mytype
-    s2 = -NSLOPE1/(4.0_mytype*C1*C1)
+    if (ISIMU==0)then
+      s2 = -NSLOPE1/(4.0_mytype*C1*C1)
+    else
+      s2 = -NSLOPE1/(4.0_mytype*C1*C1)
+    end if
+    
     
     call Wavenum(wavenumG1,wavenumG2,wavenumG3)
+    call Random_number_gen_init()
     
     do k=sp%zst(3),sp%zen(3)
       wrk3=wavenumG3(k)
@@ -202,7 +207,8 @@ contains
           k_proj=sqrt(wrk1b+wrk2b)       + 1.e-10
           
           ! Generate random number
-          alpha_rnd=Random_number_gen()
+!          alpha_rnd=Random_number_gen()
+          call random_number(alpha_rnd)
           alpha_rnd=TWOPI*alpha_rnd
           
           !             ->                 ->
@@ -298,7 +304,7 @@ contains
       do j=ph%xst(2),ph%xen(2)
         
         ! y is the global coordinate
-        y=real(bly,mytype)*(real(j,mytype)-1._mytype)/real(N2G,mytype)-real(bly,mytype)*0.5_mytype
+        y=real(BLY,mytype)*(real(j,mytype)-1._mytype)/real(N2G,mytype)-real(BLY,mytype)*0.5_mytype
         y=abs(y)
         ! Stanley and Sarkar:
         if (y<0.3_mytype) then

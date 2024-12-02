@@ -71,13 +71,12 @@ program Spectral_3D
     !
     ! ///////////////////////////////////////////////////// !
 
-    use decomp_2d_constants
     use decomp_2d_mpi
     use decomp_2d_fft
     use decomp_2d
     use MPI
 
-    use m_glob_params
+    use m_glob_params, only: N1G,N2G,N3G,P_row,P_col,CURDAT,ierr
     use m_io, only: Read_THI_PJET, Write_3d_velocities
     use m_initial_cond
     use m_core_calc, only: Core_calc
@@ -105,9 +104,9 @@ program Spectral_3D
     call MPI_COMM_RANK(MPI_COMM_WORLD, nrank, ierr)
     
     if (nrank==0) then
-        print *, " ------------------"
-        print *, "|   MPI Started    |"
-        print *, " ------------------"
+        print *, " ----------------------"
+        print *, "|      MPI Started     |"
+        print *, " ----------------------"
     endif
     
     ! ----- Read THI_PJET -------

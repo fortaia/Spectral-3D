@@ -110,6 +110,7 @@ contains
     else
       ! In case of restart load previuosly calculated quantities
       call Read_store_file(time,tref,dt)
+      if(IFORCE==1) call Random_number_gen_init()
     endif
     
     call Stat_run(work_xsp1,0,time,sp)
@@ -155,7 +156,8 @@ contains
       if (mod(iter,NOUTT)==0) then
         if(ISIMU/=0) then
           ! Print U-velocity
-          call decomp_2d_fft_3d(u,ur)
+          work_xsp1=u
+          call decomp_2d_fft_3d(work_xsp1,ur)
           write(iter_string, '(I5.5)') NTMAX
           call decomp_2d_write_plane(1, ur, 'plane_U_'//iter_string//'.raw',&
                   opt_iplane=N3G / 2, opt_decomp=ph, opt_reduce_prec=.false.)
@@ -262,10 +264,10 @@ contains
     call Calc_kin_en_sp(u,v,w,work_xsp1)
     call Shell_average(work_xsp1,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp,count,sh_ave)
     
-    call MPI_Reduce(count, count_g, N2G/2+1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-    call MPI_Reduce(sh_ave, en_spect, N2G/2+1, real_type, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(count, count_g, N2G/2+1, MPI_INTEGER, MPI_SUM, nproc-1, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(sh_ave, en_spect, N2G/2+1, real_type, MPI_SUM, nproc-1, MPI_COMM_WORLD, ierr)
     
-    if(nrank==nproc) then
+    if(nrank==nproc-1) then
       en_spect=en_spect/real(count_g,mytype)
       write(iter_string, '(I5.5)') iter
       call Write_ascii('k_Ek_'//iter_string//'.dat',wavenumG1,en_spect)
@@ -318,18 +320,18 @@ contains
     
     call Continuity(u,v,w,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
     ! 2nd - step
-    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,rhs_x,rhs_y,rhs_z,sp)
+    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,work_xsp1,work_ysp1,work_zsp1,sp)
     
-    rhs_x = const_rk3(2) * rhs_x + work_xsp1
-    rhs_y = const_rk3(2) * rhs_y + work_ysp1
-    rhs_z = const_rk3(2) * rhs_z + work_zsp1
+    rhs_x = const_rk3(2) * rhs_x + work_xsp1 * dt
+    rhs_y = const_rk3(2) * rhs_y + work_ysp1 * dt
+    rhs_z = const_rk3(2) * rhs_z + work_zsp1 * dt
     
-    call NonLin(u,v,w,ur,vr,wr,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,&
+    call NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
             wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
     
-    rhs_x = rhs_x + work_xsp1
-    rhs_y = rhs_y + work_ysp1
-    rhs_z = rhs_z + work_zsp1
+    rhs_x = rhs_x + work_xsp1 * dt
+    rhs_y = rhs_y + work_ysp1 * dt
+    rhs_z = rhs_z + work_zsp1 * dt
     
     u = u + const_rk3(3) * rhs_x
     v = v + const_rk3(3) * rhs_y
@@ -337,18 +339,18 @@ contains
     
     call Continuity(u,v,w,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
     ! 3rd - step
-    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,rhs_x,rhs_y,rhs_z,sp)
+    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,work_xsp1,work_ysp1,work_zsp1,sp)
     
-    rhs_x = const_rk3(4) * rhs_x + work_xsp1
-    rhs_y = const_rk3(4) * rhs_y + work_ysp1
-    rhs_z = const_rk3(4) * rhs_z + work_zsp1
+    rhs_x = const_rk3(4) * rhs_x + work_xsp1 * dt
+    rhs_y = const_rk3(4) * rhs_y + work_ysp1 * dt
+    rhs_z = const_rk3(4) * rhs_z + work_zsp1 * dt
     
-    call NonLin(u,v,w,ur,vr,wr,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,&
+    call NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
             wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
     
-    rhs_x = rhs_x + work_xsp1
-    rhs_y = rhs_y + work_ysp1
-    rhs_z = rhs_z + work_zsp1
+    rhs_x = rhs_x + work_xsp1 * dt
+    rhs_y = rhs_y + work_ysp1 * dt
+    rhs_z = rhs_z + work_zsp1 * dt
     
     u = u + const_rk3(5) * rhs_x
     v = v + const_rk3(5) * rhs_y
@@ -385,38 +387,40 @@ contains
     w = w + const_rk3(1) * (rhs_z + fs_z)
     
     call Continuity(u,v,w,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
+    
     ! 2nd - step
-    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,rhs_x,rhs_y,rhs_z,sp)
+    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,work_xsp1,work_xsp1,work_xsp1,sp)
     
-    rhs_x = const_rk3(2) * (rhs_x + fs_x) + work_xsp1
-    rhs_y = const_rk3(2) * (rhs_y + fs_y) + work_ysp1
-    rhs_z = const_rk3(2) * (rhs_z + fs_z) + work_zsp1
+    rhs_x = const_rk3(2) * (rhs_x + fs_x) + work_xsp1 * dt
+    rhs_y = const_rk3(2) * (rhs_y + fs_y) + work_ysp1 * dt
+    rhs_z = const_rk3(2) * (rhs_z + fs_z) + work_zsp1 * dt
     
-    call NonLin(u,v,w,ur,vr,wr,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,&
+    call NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
             wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
-    
-    rhs_x = (rhs_x + fs_x) + work_xsp1
-    rhs_y = (rhs_y + fs_y) + work_ysp1
-    rhs_z = (rhs_z + fs_z) + work_zsp1
+!                      nonlin  + forc
+    rhs_x = rhs_x +  (work_xsp1 + fs_x) * dt
+    rhs_y = rhs_y +  (work_ysp1 + fs_y) * dt
+    rhs_z = rhs_z +  (work_zsp1 + fs_z) * dt
     
     u = u + const_rk3(3) * rhs_x
     v = v + const_rk3(3) * rhs_y
     w = w + const_rk3(3) * rhs_z
     
     call Continuity(u,v,w,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
+    
     ! 3rd - step
-    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,rhs_x,rhs_y,rhs_z,sp)
+    call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,work_xsp1,work_xsp1,work_xsp1,sp)
     
-    rhs_x = const_rk3(4) * rhs_x + work_xsp1
-    rhs_y = const_rk3(4) * rhs_y + work_ysp1
-    rhs_z = const_rk3(4) * rhs_z + work_zsp1
+    rhs_x = const_rk3(4) * rhs_x + work_xsp1 * dt
+    rhs_y = const_rk3(4) * rhs_y + work_ysp1 * dt
+    rhs_z = const_rk3(4) * rhs_z + work_zsp1 * dt
     
-    call NonLin(u,v,w,ur,vr,wr,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,&
+    call NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
             wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
-    
-    rhs_x = (rhs_x + fs_x) + work_xsp1
-    rhs_y = (rhs_y + fs_y) + work_ysp1
-    rhs_z = (rhs_z + fs_z) + work_zsp1
+    !                  nonlin  + forc
+    rhs_x = rhs_x +  (work_xsp1 + fs_x) * dt
+    rhs_y = rhs_y +  (work_ysp1 + fs_y) * dt
+    rhs_z = rhs_z +  (work_zsp1 + fs_z) * dt
     
     u = u + const_rk3(5) * rhs_x
     v = v + const_rk3(5) * rhs_y

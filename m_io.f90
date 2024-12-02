@@ -42,11 +42,9 @@ contains
         print *, "THI_PJET NOT FOUND."
         call MPI_ABORT(MPI_COMM_WORLD,errorcode,ierr)
       end if
-      
-      print *, '                     '
-      print *, ' - Reading THI_PJET -  '
-      print *, '                     '
-      
+      print *, ' '
+      print *, '** Reading THI_PJET **'
+      print *, ' '
       nnf = 55
       OPEN (nnf, FILE = 'THI_PJET', FORM = 'FORMATTED', STATUS = 'OLD')
       

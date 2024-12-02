@@ -121,14 +121,13 @@ contains
     use decomp_2d, only: decomp_info
     
     type(decomp_info), pointer :: sp
+    
     integer :: i,j,k,wave
-    real(mytype) :: wave_radius,sq_w2,sq_w3,symm_factor
-    
-    real(mytype), contiguous, dimension(:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
-    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(IN) :: in_var
-    
     integer, dimension(N2G/2+1), intent(OUT) :: count
+    real(mytype) :: wave_radius,sq_w2,sq_w3,symm_factor
+    real(mytype), contiguous, dimension(:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
     real(mytype), dimension(N2G/2+1), intent(OUT) :: out_var
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(IN) :: in_var
     
     !---------   Subroutine start  ------------------
     
@@ -165,11 +164,13 @@ contains
     use decomp_2d_constants, only: mytype, real_type
     use decomp_2d
     use MPI
-
+    
+    type(decomp_info), pointer :: sp
+    
     integer :: ierr
     real(mytype) :: res_loc, res_sph
     complex(mytype), dimension(:,:,:), intent(IN) :: field1,field2
-    type(decomp_info), pointer :: sp
+    
     !---------   Subroutine start  ------------------
     
     if (sp%zst(1)==1) then

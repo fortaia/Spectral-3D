@@ -70,7 +70,7 @@ contains
   end subroutine Continuity
   
   !
-  ! Dissipative TERM
+  ! Dissipative TERM -> OUT var: rhs_x,rhs_y,rhs_z
   !
   subroutine Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,rhs_x,rhs_y,rhs_z,sp)
     !
@@ -124,9 +124,9 @@ contains
   end subroutine Dissipative
   
   !
-  ! Non-linear (convective) TERM
+  ! Non-linear (convective) TERM -> OUT var: work_xsp1,work_ysp1,work_zsp1
   !
-  subroutine NonLin(u,v,w,ur,vr,wr,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,&
+  subroutine NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
                     wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
     
     use m_aux_spect, only: Calc_vorticity_sp
@@ -243,7 +243,7 @@ contains
   
   end subroutine NonLin
   !
-  ! Forcing HIT TERM
+  ! Forcing HIT TERM -> OUT var: fs_x,fs_y,fs_z
   !
   subroutine Forcing(u,v,w,fs_x,fs_y,fs_z,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
     
@@ -256,20 +256,20 @@ contains
     ! which is uncorrelated in time with the velocity.
     ! =================================================
     use m_glob_params
-    use m_utils, only: Random_number_gen
     use m_aux_spect, only: Spherical_mult
     
     use decomp_2d_mpi, only: mytype,nrank
     
+    type(decomp_info), pointer :: sp
+    
     integer :: i,j,k,skip
     real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
     real(mytype) :: w1,w2,w3,w1_s,w2_s,w3_s,normaliz_fs,numerator,denominator,mod_const,k_norm,k_proj
-    real(mytype) :: e2(3),e1(2),psi_rnd,two_phi_rnd,theta1,theta2
+    real(mytype) :: e2(3),e1(2),rand_ang(2),psi_rnd,two_phi_rnd,theta1,theta2
     real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
     complex(mytype) :: xsi1,xsi2,a_rnd,b_rnd
-    complex(mytype), dimension(:,:,:), intent(IN) :: u,v,w
-    complex(mytype), dimension(:,:,:), intent(INOUT) :: fs_x,fs_y,fs_z
-    type(decomp_info), pointer :: sp
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: u,v,w
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: fs_x,fs_y,fs_z
     
     ! ------------ Start subroutine ------------------
     mod_const=-1.0_mytype
@@ -300,14 +300,15 @@ contains
           
           mod_const = exp(-0.5_mytype / WIDTH_F * (k_norm-X0)*(k_norm-X0))/k_norm
           
-          psi_rnd = TWOPI*Random_number_gen()
-          two_phi_rnd = TWOPI*Random_number_gen()
+          call random_number(rand_ang)
+          psi_rnd = TWOPI*rand_ang(1)
+          two_phi_rnd = TWOPI*rand_ang(2)
           
           xsi1=cmplx(real(u(i,j,k))*e1(1)+real(v(i,j,k))*e1(2),&
-                  imag(u(i,j,k))*e1(1)+imag(v(i,j,k))*e1(2), mytype)
+                     imag(u(i,j,k))*e1(1)+imag(v(i,j,k))*e1(2), mytype)
           
           xsi2=cmplx(real(u(i,j,k))*e2(1)+real(v(i,j,k))*e2(2)+real(w(i,j,k))*e2(3),&
-                  imag(u(i,j,k))*e2(1)+imag(v(i,j,k))*e2(2)+imag(w(i,j,k))*e2(3), mytype)
+                     imag(u(i,j,k))*e2(1)+imag(v(i,j,k))*e2(2)+imag(w(i,j,k))*e2(3), mytype)
           
           numerator= sin(two_phi_rnd)*real(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*imag(xsi2) + cos(psi_rnd)*real(xsi2))
           denominator= -sin(two_phi_rnd)*imag(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*real(xsi2) -cos(psi_rnd)*imag(xsi2))
@@ -334,7 +335,7 @@ contains
     !   Normalization such that
     !     0.5 * < fi*fi > = Totf / Dt
     
-    normaliz_fs = sqrt( (2.0_mytype*(TOTF/DT)) / normaliz_fs)
+    normaliz_fs = sqrt( 2.0_mytype*TOTF/(DT*normaliz_fs))
     
     fs_x = fs_x * normaliz_fs
     fs_y = fs_y * normaliz_fs
@@ -343,7 +344,7 @@ contains
   end subroutine Forcing
   
   !
-  ! Non-linear (convective) + Dissipative TERM
+  ! Non-linear (convective) + Dissipative TERM -> OUT var: rhs_x,rhs_y,rhs_z
   !
   subroutine RHS(u,v,w,ur,vr,wr,rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph, &
                  wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,normaliz,trunc_index,ph,sp)

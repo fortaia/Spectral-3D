@@ -4,7 +4,7 @@ module m_utils
   
   private
   
-  public :: Dealiasing_init, Dealiasing_trunc, Cfl, Random_number_gen
+  public :: Dealiasing_init, Dealiasing_trunc, Cfl, Random_number_gen_init
   
   contains
     
@@ -192,25 +192,103 @@ module m_utils
     
     end function cfl
     
+    ! Compute spherical coordinates local orthogonal unit vectors
+    subroutine Sphere_vect(wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,mod_const,e1,e2,sp)
+      
+      use m_glob_params
+      use m_aux_spect, only: Spherical_mult
+      use decomp_2d, only: decomp_info
+      use decomp_2d_mpi, only: mytype
+      
+      type(decomp_info), pointer :: sp
+      
+      integer :: i,j,k,count
+      real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
+      real(mytype) :: w1,w2,w3,w1_s,w2_s,w3_s,k_norm,k_proj
+      real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
+      real(mytype), dimension(:), allocatable, intent(OUT) :: mod_const
+      real(mytype), dimension(:,:), allocatable, intent(OUT) :: e1,e2
+      
+      ! ------------ Start subroutine ------------------
+      count=0
+      do k=sp%zst(3),sp%zen(3)
+        w3_s=sq_wnumG3(k)
+        do j=sp%zst(2),sp%zen(2)
+          w2_s=sq_wnumG2(j)
+          do i=sp%zst(1),sp%zen(1)
+            w1_s=sq_wnumG1(i)
+            
+            k_norm=sqrt(w1_s+w2_s+w3_s)
+            if (k_norm > X0) cycle
+            count = count+1
+          
+          enddo
+        enddo
+      enddo
+      
+      if (count==0) then
+        allocate(e1(1,2),e2(1,3),mod_const(1))
+        e1=-1.0_mytype
+        e2=-1.0_mytype
+        mod_const(1)=-1.0_mytype
+      else
+        allocate(e1(count,2),e2(count,3),mod_const(count))
+        e1=0.0_mytype
+        e2=0.0_mytype
+      end if
+      
+      count=0
+      do k=sp%zst(3),sp%zen(3)
+        w3=wavenumG3(k)
+        w3_s=sq_wnumG3(k)
+        do j=sp%zst(2),sp%zen(2)
+          w2=wavenumG2(j)
+          w2_s=sq_wnumG2(j)
+          do i=sp%zst(1),sp%zen(1)
+            w1=wavenumG1(i)
+            w1_s=sq_wnumG1(i)
+            
+            k_norm=sqrt(w1_s+w2_s+w3_s)
+            if (k_norm > X0.or.k_norm==0.0_mytype) cycle
+            count = count+1
+            
+            k_proj=sqrt(w1_s+w2_s)
+            
+            if (k_proj==0.0_mytype) then
+              e2(count,1)=1.0_mytype
+              e2(count,2)=0.0_mytype
+              e2(count,3)=0.0_mytype
+              
+              e1(count,1)= 0.0_mytype
+              e1(count,2)= 1.0_mytype
+              cycle
+            end if
+            
+            e2(count,1)=w1*w3/(k_norm*k_proj)
+            e2(count,2)=w2*w3/(k_norm*k_proj)
+            e2(count,3)=-(k_proj/k_norm)
+            
+            e1(count,1)= w2/k_proj
+            e1(count,2)=-w1/k_proj
+            
+            mod_const(count) = exp(-0.5_mytype / WIDTH_F * (k_norm-X0)*(k_norm-X0))/k_norm
+          
+          enddo
+        enddo
+      enddo
+      
+      
+    end subroutine Sphere_vect
     ! Calculate 1 random numbers
-    function Random_number_gen() result(a_rand)
+    subroutine Random_number_gen_init()
       
       use m_glob_params, only:ROPTION
       use decomp_2d_constants, only: mytype
       
       integer :: time, n
       integer, dimension(:), allocatable :: seed
-      real(mytype) :: a_rand
       
-      ! option = 0 for testing
       ! option = 1 direct paralel random with myid as seed.
-      
-      if(ROPTION==0) then
-        
-        ! not random at all, but used for non-random testing.
-        !      aux(:,:,:)    = 0.4D0
-        a_rand=0.4_mytype
-      endif
       
       if(ROPTION==1) then
         
@@ -222,11 +300,9 @@ module m_utils
         seed = time
         CALL RANDOM_SEED(put=seed)
         
-        CALL RANDOM_NUMBER(a_rand)
-      
       endif
       return
     
-    end function Random_number_gen
+    end subroutine Random_number_gen_init
   
 end module m_utils
