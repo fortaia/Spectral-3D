@@ -1,0 +1,112 @@
+0              ----> NBOUND
+4   ----> P_row: number of pencils along y (Nprocs=P_row * P_col)
+1   ----> P_col: number of pencils along z (Nprocs=P_row * P_col)
+1   ----> ROPTION: Random Generator Option; 0 = off; =1 on; =2,3, other
+256 ----> N1: number of physical grid points in X
+256 ----> N2: number of physical grid points in Y
+256 ----> N3: number of physical grid points in Z  
+0.666666666666 ----> ALPHA0
+0              ----> NRANDCALL
+'*************************************'
+3       ----> NRKU    ORDER OF RK SCHEME
+5.0E-05 ----> DT (suggested if IPARTIC.NE.0: noutpart*dt < 0.1 tau_eta)
+1000  ----> NTMAX   MAXIMUM NUMBER OF ITERATIONS (if icfl=0 ntmax=jsave+1)
+0      ----> ICFL (=0 KEEP DT CONSTANT; =1 KEEP CFL CONSTANT)
+'    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0       ----> ISIMU (=0: THI; =1: PJET; =2: SFT; =3 WAKE; =4 RJET)
+'    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0       ----> ISCAR (=0: no scalar; =1: run scalar; =2: transport equation)
+0.7     ----> SCH  SCHMIDT NUMBER
+0.008 ----> RNU   VISCOSITY
+0       ----> ICHOPA
+0       ----> ISTRUC : 3=SF;4=SSF;5=FSF
+0       ----> ISMAG  : 3=SMAG;4=DSMAG;5=GRAD;6=SS;7=MIX
+0       ----> IHVISC
+0       ----> NEXPH: Order of hyperviscosity
+'    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+init1  ---------> CURDAT
+init1  ---------> RESDAT
+''
+0      --> JINIT  IF JINIT=0 : INITIAL CONDITIONS DEFINED BY init_iso
+002    --> NI     READING RECORD NUMBER NI OF RESDAT 
+''
+1    --> JWRITE 
+0500    --> JSAVE  FIELDS WRITTEN EVERY JSAVE time-step
+''
+0100    ------> NOUT : statshort CALLED EVERY NOUT  time-step
+0100    ------> NOUTT: spectall  CALLED EVERY NOUTT time-step 
+0    ------> IPRESC  PRESSURE COMPUTATION   
+'    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0   -------> IPDF
+1   -------> NOPDF  CALL of PDF
+'    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+3.00  ----> C1     
+4.    ----> NSLOPE1
+3.00  ----> C4      
+4.    ----> NSLOPE4
+0.1   ----> TOTE  TURBULENT-FLUCTUATION RMS IN ANY DIRECTION
+0.1   ----> TOTS  TEMPERATURE OR P.SCAL. VARAANCE
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@' 
+1     ----> IFORCE   VELOCITY FORCE (=1 ALVELIUS; =2 ...)
+22.0   ----> X0       VELOCITY FORCING WAVE NUMBER 
+3.26 ----> TOTF     FORCING INTENSITY
+3.    ----> WIDTH_F  NUMBER OF MODES WHERE VELOCITY FORCE IS CONCENTRATED
+0     ----> ISFORCE  SCALAR IFORCE (=1 ALVELIUS; =2 MEAN GRAD)
+3.    ----> X0S      SCALAR FORCING WAVE NUMBER
+1.E-0 ----> TOTFS    SCALAR FORCING INTENSITY
+3.0   ----> WIDTH_FS NUMBER OF MODES WHERE SCALAR FORCE IS CONCENTRATED
+1.0   ----> BETA_SCAL (MEAN SCALAR GRADIENT ALONG Y-DIRECTION) 
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@' 
+3500. ----> REYH: REYNOLDS NUMBER BASED ON U1,U2 AND H/2 (TAKE CARE) 
+1. -----> A0X: RATIO LX/LY
+1. -----> A0Z: RATIO LZ/LY
+6.0 -----> BLY: BOX SIZE (ALONG Y) IN H/2 UNITS
+35.0 -----> HUTHETA: H/THETA FOR INITIAL VELOCITY PROFILE
+1.0  -----> U2: MAXIMUM INITIAL JET VELOCITY
+0.0  -----> U1: MIMINUM INITIAL JET VELOCITY
+20.0 -----> SHTHETA: H/THETA FOR INITIAL SCALAR PROFILE
+1.0  -----> T2: MAXIMUM INITIAL SCALAR FIELD
+0.0  -----> T1: MIMINUM INITIAL SCALAR FIELD
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+-1 -------> NJJ FOR SFT SIMULATIONS: if =-1 INVERSE SFT i.e. REMOVES T FROM CENTER REGION
+1  -------> NNRDT (=1 Start SFT from THI; =2 Re-Start SFT). NOTE: USING BLY, HUTHETA and SHTHETA ABOVE
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0 --------> IPARTIC: 0 = no particles (if NOUTPART even USE ODD JSAVE e.g. JSAVE=2001, NOUTPART=4 data is written in jsave+1)
+3 --------> INTERPOL_TYPE: 0=EXACT; -1≃BACKWARD; 1=LINEAR; 2=QUADRATIC; 3=CUBIC; 4=TS13; 5=TS15
+1000000 --> NPARTIC_G: TOTAL NUMBER OF PARTICLES (GLOBAL)
+1 --------> PARTIC_LOC: INITIAL POSITION OF PARTICLES (=1 ALL; =2 SLAYER; =3 OUTER; =4 PARTICLES PAIRS)
+0 --------> NPART_VAR: VARIABLES TO WRITE DURING RUN (=0 usual i.e. x,y,z,u,v,w; NE.0 e.g.3 read 3 variables from THI_PJET_partic
+8 --------> NOUTPART: PARTICLE VELOCITIES WRITEN EVERY NOUTPARTIC time-step (USE EVEN NUMBER!)
+0 --------> JPINIT: (=0: INITIAL CONDITIONS DEFINED BY PREPART; =1 RESTART (restart with partic_stats_00001.out)
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0   ------> IVISC: =0:NEWTONIAN; =1:FENEP; =2: CARREAU MODEL; =3 JOHNSON-SEGELMAN (aaa=1:OLDROYD-B;aaa=-1:OLDROYD-A) !!%=4 OLDROYD-B; =5 FENE (Lagrangean)
+10.  -----> LPOLY/AAA : LENGTH OF POLYMER MOLECULE (IF IVISC.EQ.3: JOHNSON-SEGALMAN LPOLY=aaa)
+0.1  -----> RLTIME (LAMBDA) : RELAXATION TIME
+0.9  -----> POLY_BETA : POLYMER CONCENTRATION
+0.03 ----> LAMPOWER: LAMBDA CARREAU MODEL (IF IVISC.EQ.1.AND.LAMPOWER.EQ.-1D0) NO Vaithianathan CORRECTION
+1.0   ----> NPOWER : NPOWER CARREAU MODEL
+1.0   ----> APOWER : APOWER CARREAU MODEL 
+0.03 ----> NUZERO : NUZERO CARREAU MODEL
+0.03 ----> NUINFTY : NUINFTY CARREAU MODEL
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0  ------> BUILDANIMATION : = 1 On; = 0 Off
+23 ------> TIMESTART : Starting Iteration
+10 ------> TIMESKIP : Write at Every TIMESKIP Iterations
+50 ------> NUMBERFRAMES : Number of Frames
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0 -> WRITEBINARY:=0 ASCIIEnSight(PARTIAL); =1 BINARYEnSight(PARTIAL); =2 RawBinary(FULL); = 3 Binary/wormtracker (FULL)(If Vector: Set to 1)
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+2  ------> NDIMS: (=0; =1 1D; =2 2D; =3 3D). IF =0 AND WRITEBINARY=3: VERY FAST OUTPUT FIELD (TSILVA); worm NDIMS.NE.0 !(AGHIRA) 
+1   -----> ISTART : I START INDEX FOR PARTIAL FIELD
+128 -----> IEND   : I END INDEX FOR PARTIAL FIELD
+1   -----> JSTART : J START INDEX FOR PARTIAL FIELD
+128   -----> JEND   : J END INDEX FOR PARTIAL FIELD
+64  -----> KSTART : K START INDEX FOR PARTIAL FIELD
+64  -----> KEND   : K END INDEX FOR PARTIAL FIELD
+'     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+0   ------> IMHD    : =1:MHD turned on (magnetohydrodynamics at low magnetic Reynolds number) 
+0.1  -----> L0_e    : Initial guess for integral scale (from previous DNS with IMHD=0)
+0.1  -----> U0_E    : Initial guess for root-mean-square velocity (from previous DNS with IMHD=0)
+0.1  -----> N0_E    : Magnetic interaction number
+0.1  -----> SIGMA_E : Electrical conductivity 
+

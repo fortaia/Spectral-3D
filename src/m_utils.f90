@@ -4,7 +4,7 @@ module m_utils
   
   private
   
-  public :: Dealiasing_init, Dealiasing_trunc, Cfl, Random_number_gen_init
+  public :: Dealiasing_init, Dealiasing_trunc, Cfl, Random_number_gen_init, Forcing_init
   
   contains
     
@@ -192,22 +192,21 @@ module m_utils
     
     end function cfl
     
-    ! Compute spherical coordinates local orthogonal unit vectors
-    subroutine Sphere_vect(wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,mod_const,e1,e2,sp)
+    ! Compute local orthogonal unit vectors in spherical coordinates and module forcing
+    subroutine Forcing_init(wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,linear_index,forc_init,sp)
       
-      use m_glob_params
-      use m_aux_spect, only: Spherical_mult
+      use m_glob_params, only: X0, WIDTH_F, N1G, N2G
+
       use decomp_2d, only: decomp_info
       use decomp_2d_mpi, only: mytype
       
       type(decomp_info), pointer :: sp
       
       integer :: i,j,k,count
-      real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
+      integer(8), dimension(:), allocatable, intent(OUT) :: linear_index
       real(mytype) :: w1,w2,w3,w1_s,w2_s,w3_s,k_norm,k_proj
       real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
-      real(mytype), dimension(:), allocatable, intent(OUT) :: mod_const
-      real(mytype), dimension(:,:), allocatable, intent(OUT) :: e1,e2
+      real(mytype), dimension(:,:), allocatable, intent(OUT) :: forc_init
       
       ! ------------ Start subroutine ------------------
       count=0
@@ -219,22 +218,18 @@ module m_utils
             w1_s=sq_wnumG1(i)
             
             k_norm=sqrt(w1_s+w2_s+w3_s)
-            if (k_norm > X0) cycle
+            if (k_norm > X0.or.k_norm==0.0_mytype) cycle
             count = count+1
           
           enddo
         enddo
       enddo
-      
-      if (count==0) then
-        allocate(e1(1,2),e2(1,3),mod_const(1))
-        e1=-1.0_mytype
-        e2=-1.0_mytype
-        mod_const(1)=-1.0_mytype
+
+      if (count>0) then
+        allocate(forc_init(count,6),linear_index(count))
+        forc_init=0.0_mytype
       else
-        allocate(e1(count,2),e2(count,3),mod_const(count))
-        e1=0.0_mytype
-        e2=0.0_mytype
+        return
       end if
       
       count=0
@@ -252,34 +247,40 @@ module m_utils
             if (k_norm > X0.or.k_norm==0.0_mytype) cycle
             count = count+1
             
+            linear_index(count) = i + (j-1) * N1G + (k - 1) * N1G * N2G
+            
             k_proj=sqrt(w1_s+w2_s)
             
             if (k_proj==0.0_mytype) then
-              e2(count,1)=1.0_mytype
-              e2(count,2)=0.0_mytype
-              e2(count,3)=0.0_mytype
-              
-              e1(count,1)= 0.0_mytype
-              e1(count,2)= 1.0_mytype
+              ! vector e1
+              forc_init(count,1)= 0.0_mytype
+              forc_init(count,2)= 1.0_mytype
+              ! vector e2
+              forc_init(count,3)=1.0_mytype
+              forc_init(count,4)=0.0_mytype
+              forc_init(count,5)=0.0_mytype
+              ! module
+              forc_init(count,6) = exp(-0.5_mytype / WIDTH_F * (k_norm-X0)*(k_norm-X0))/k_norm
               cycle
             end if
-            
-            e2(count,1)=w1*w3/(k_norm*k_proj)
-            e2(count,2)=w2*w3/(k_norm*k_proj)
-            e2(count,3)=-(k_proj/k_norm)
-            
-            e1(count,1)= w2/k_proj
-            e1(count,2)=-w1/k_proj
-            
-            mod_const(count) = exp(-0.5_mytype / WIDTH_F * (k_norm-X0)*(k_norm-X0))/k_norm
+            ! vector e1
+            forc_init(count,1) = w2/k_proj
+            forc_init(count,2) =-w1/k_proj
+            ! vector e2
+            forc_init(count,3) = w1*w3/(k_norm*k_proj)
+            forc_init(count,4) = w2*w3/(k_norm*k_proj)
+            forc_init(count,5) =-(k_proj/k_norm)
+            ! module
+            forc_init(count,6) = exp(-0.5_mytype / WIDTH_F * (k_norm-X0)*(k_norm-X0))/k_norm
           
           enddo
         enddo
       enddo
       
       
-    end subroutine Sphere_vect
-    ! Calculate 1 random numbers
+    end subroutine Forcing_init
+    
+    ! Initalise random numbers calculation
     subroutine Random_number_gen_init()
       
       use m_glob_params, only:ROPTION

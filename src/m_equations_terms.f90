@@ -8,7 +8,7 @@ module m_equations_terms
   private
   
   public :: Continuity, Dissipative, NonLin, Forcing, RHS
-  
+
 contains
   
   !
@@ -127,7 +127,7 @@ contains
   ! Non-linear (convective) TERM -> OUT var: work_xsp1,work_ysp1,work_zsp1
   !
   subroutine NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
-                    wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
+          wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
     
     use m_aux_spect, only: Calc_vorticity_sp
     use m_utils, only: Dealiasing_trunc
@@ -245,7 +245,7 @@ contains
   !
   ! Forcing HIT TERM -> OUT var: fs_x,fs_y,fs_z
   !
-  subroutine Forcing(u,v,w,fs_x,fs_y,fs_z,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
+  subroutine Forcing(u,v,w,fs_x,fs_y,fs_z,linear_index,forc_init,sp)
     
     ! =================================================
     ! Sepand Ossia -  February 2000
@@ -258,85 +258,84 @@ contains
     use m_glob_params
     use m_aux_spect, only: Spherical_mult
     
-    use decomp_2d_mpi, only: mytype,nrank
+    use decomp_2d_mpi, only: mytype
     
     type(decomp_info), pointer :: sp
     
-    integer :: i,j,k,skip
+    integer :: i,j,k,l,n_el
+    integer(8) :: dims_forc
+    integer(8), dimension(:), allocatable, intent(IN) :: linear_index
     real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
-    real(mytype) :: w1,w2,w3,w1_s,w2_s,w3_s,normaliz_fs,numerator,denominator,mod_const,k_norm,k_proj
+    real(mytype) :: normaliz_fs,numerator,denominator,mod_const
     real(mytype) :: e2(3),e1(2),rand_ang(2),psi_rnd,two_phi_rnd,theta1,theta2
-    real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
+    real(mytype), dimension (:,:), allocatable, intent(IN) :: forc_init
     complex(mytype) :: xsi1,xsi2,a_rnd,b_rnd
     complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: u,v,w
     complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: fs_x,fs_y,fs_z
     
     ! ------------ Start subroutine ------------------
-    mod_const=-1.0_mytype
-    skip=0
-    if(nrank==0) skip=1
     
-    do k=sp%zst(3),sp%zen(3)
-      w3=wavenumG3(k)
-      w3_s=sq_wnumG3(k)
-      do j=sp%zst(2),sp%zen(2)
-        w2=wavenumG2(j)
-        w2_s=sq_wnumG2(j)
-        do i=sp%zst(1)+skip,sp%zen(1)
-          w1=wavenumG1(i)
-          w1_s=sq_wnumG1(i)
-          !                                avoid zero-division
-          k_norm=sqrt(w1_s+w2_s+w3_s) + 1.e-10
-          if (k_norm > X0) cycle
-          
-          k_proj=sqrt(w1_s+w2_s)      + 1.e-10
-          
-          e2(1)=w1*w3/(k_norm*k_proj)
-          e2(2)=w2*w3/(k_norm*k_proj)
-          e2(3)=-(k_proj/k_norm)
-          
-          e1(1)= w2/k_proj
-          e1(2)=-w1/k_proj
-          
-          mod_const = exp(-0.5_mytype / WIDTH_F * (k_norm-X0)*(k_norm-X0))/k_norm
-          
-          call random_number(rand_ang)
-          psi_rnd = TWOPI*rand_ang(1)
-          two_phi_rnd = TWOPI*rand_ang(2)
-          
-          xsi1=cmplx(real(u(i,j,k))*e1(1)+real(v(i,j,k))*e1(2),&
-                     imag(u(i,j,k))*e1(1)+imag(v(i,j,k))*e1(2), mytype)
-          
-          xsi2=cmplx(real(u(i,j,k))*e2(1)+real(v(i,j,k))*e2(2)+real(w(i,j,k))*e2(3),&
-                     imag(u(i,j,k))*e2(1)+imag(v(i,j,k))*e2(2)+imag(w(i,j,k))*e2(3), mytype)
-          
-          numerator= sin(two_phi_rnd)*real(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*imag(xsi2) + cos(psi_rnd)*real(xsi2))
-          denominator= -sin(two_phi_rnd)*imag(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*real(xsi2) -cos(psi_rnd)*imag(xsi2))
-          
-          if(numerator==0._mytype.and.denominator==numerator) cycle
-          
-          theta1=atan(numerator/(denominator+1.e-20))
-          theta2=psi_rnd+theta1
-          
-          a_rnd = cmplx(cos(theta1),sin(theta1), mytype)*mod_const*sin(two_phi_rnd)
-          b_rnd = cmplx(cos(theta2),sin(theta2), mytype)*mod_const*cos(two_phi_rnd)
-          
-          fs_x(i,j,k) = cmplx(real(a_rnd)*e1(1)+real(b_rnd)*e2(1), imag(a_rnd)*e1(1)+imag(b_rnd)*e2(1), mytype)
-          fs_y(i,j,k) = cmplx(real(a_rnd)*e1(2)+real(b_rnd)*e2(2), imag(a_rnd)*e1(2)+imag(b_rnd)*e2(2), mytype)
-          fs_z(i,j,k) = cmplx(real(b_rnd)*e2(3)                  , imag(b_rnd)*e2(3), mytype)
+    if(allocated(forc_init)) then
+      
+      n_el=size(linear_index)
+      dims_forc=size(forc_init)
+      
+      do l=1,n_el
         
-        enddo
-        skip=0
+        ! Calculate k
+        k = int( (linear_index(l) - 1)/(N1G * N2G))+ 1
+        ! Calculate j
+        j = int( mod((linear_index(l)-1)/N1G, N2G)) + 1
+        ! Calculate i
+        i = int  (mod(linear_index(l)-1,N1G)) + 1
+        
+        call random_number(rand_ang)
+        psi_rnd = TWOPI*rand_ang(1)
+        two_phi_rnd = TWOPI*rand_ang(2)
+        
+        ! vector e1
+        e1(1)=forc_init(n_el,1)
+        e1(2)=forc_init(n_el,2)
+        ! vector e2
+        e2(1)=forc_init(n_el,3)
+        e2(2)=forc_init(n_el,4)
+        e2(3)=forc_init(n_el,5)
+        ! module
+        mod_const=forc_init(n_el,6)
+        
+        xsi1=cmplx(real(u(i,j,k))*e1(1)+real(v(i,j,k))*e1(2),&
+                imag(u(i,j,k))*e1(1)+imag(v(i,j,k))*e1(2), mytype)
+        
+        xsi2=cmplx(real(u(i,j,k))*e2(1)+real(v(i,j,k))*e2(2)+real(w(i,j,k))*e2(3),&
+                imag(u(i,j,k))*e2(1)+imag(v(i,j,k))*e2(2)+imag(w(i,j,k))*e2(3), mytype)
+        
+        numerator= sin(two_phi_rnd)*real(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*imag(xsi2) + cos(psi_rnd)*real(xsi2))
+        denominator= -sin(two_phi_rnd)*imag(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*real(xsi2) -cos(psi_rnd)*imag(xsi2))
+        
+        if(numerator==0._mytype.and.denominator==numerator) cycle
+        
+        theta1=atan(numerator/(denominator+1.e-20))
+        theta2=psi_rnd+theta1
+        
+        a_rnd = cmplx(cos(theta1),sin(theta1), mytype)*mod_const*sin(two_phi_rnd)
+        b_rnd = cmplx(cos(theta2),sin(theta2), mytype)*mod_const*cos(two_phi_rnd)
+        
+        fs_x(i,j,k) = cmplx(real(a_rnd)*e1(1)+real(b_rnd)*e2(1), imag(a_rnd)*e1(1)+imag(b_rnd)*e2(1), mytype)
+        fs_y(i,j,k) = cmplx(real(a_rnd)*e1(2)+real(b_rnd)*e2(2), imag(a_rnd)*e1(2)+imag(b_rnd)*e2(2), mytype)
+        fs_z(i,j,k) = cmplx(real(b_rnd)*e2(3)                  , imag(b_rnd)*e2(3), mytype)
+      
       enddo
-    enddo
+      
+    end if
     
+    !  < fi*fi >
     normaliz_fs = Spherical_mult(fs_x,fs_x,sp)+Spherical_mult(fs_y,fs_y,sp)+Spherical_mult(fs_z,fs_z,sp)
     
     !   Normalization such that
     !     0.5 * < fi*fi > = Totf / Dt
-    
     normaliz_fs = sqrt( 2.0_mytype*TOTF/(DT*normaliz_fs))
     
+    ! Forcing vector
     fs_x = fs_x * normaliz_fs
     fs_y = fs_y * normaliz_fs
     fs_z = fs_z * normaliz_fs
@@ -347,7 +346,7 @@ contains
   ! Non-linear (convective) + Dissipative TERM -> OUT var: rhs_x,rhs_y,rhs_z
   !
   subroutine RHS(u,v,w,ur,vr,wr,rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph, &
-                 wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,normaliz,trunc_index,ph,sp)
+          wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,normaliz,trunc_index,ph,sp)
     
     use m_glob_params, only: RNU
     use m_utils, only: Dealiasing_trunc
@@ -455,4 +454,105 @@ contains
   
   end subroutine RHS
   
+  !
+  ! Forcing HIT TERM -> OUT var: fs_x,fs_y,fs_z
+  !
+  subroutine Forcing_orig(u,v,w,fs_x,fs_y,fs_z,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
+    
+    ! =================================================
+    ! Sepand Ossia -  February 2000
+    ! Ref: "RANDOM FORCING OF 3D HOMOGENEOUS TURBULENCE"
+    ! Phys. Fluids , Vol 11(7) , 1999, pp 1880-1889.
+    !
+    ! The forcing scheme provides a divergence-free force
+    ! which is uncorrelated in time with the velocity.
+    ! =================================================
+    use m_glob_params
+    use m_aux_spect, only: Spherical_mult
+    
+    use decomp_2d_mpi, only: mytype,nrank
+    
+    type(decomp_info), pointer :: sp
+    
+    integer :: i,j,k,skip
+    real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
+    real(mytype) :: w1,w2,w3,w1_s,w2_s,w3_s,normaliz_fs,numerator,denominator,mod_const,k_norm,k_proj
+    real(mytype) :: e2(3),e1(2),rand_ang(2),psi_rnd,two_phi_rnd,theta1,theta2
+    real(mytype), dimension (:), intent(IN) :: wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3
+    complex(mytype) :: xsi1,xsi2,a_rnd,b_rnd
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: u,v,w
+    complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: fs_x,fs_y,fs_z
+    
+    ! ------------ Start subroutine ------------------
+    mod_const=-1.0_mytype
+    skip=0
+    if(nrank==0) skip=1
+    
+    do k=sp%zst(3),sp%zen(3)
+      w3=wavenumG3(k)
+      w3_s=sq_wnumG3(k)
+      do j=sp%zst(2),sp%zen(2)
+        w2=wavenumG2(j)
+        w2_s=sq_wnumG2(j)
+        do i=sp%zst(1)+skip,sp%zen(1)
+          w1=wavenumG1(i)
+          w1_s=sq_wnumG1(i)
+          !                                avoid zero-division
+          k_norm=sqrt(w1_s+w2_s+w3_s) + 1.e-10
+          if (k_norm > X0) cycle
+          
+          k_proj=sqrt(w1_s+w2_s)      + 1.e-10
+          
+          e2(1)=w1*w3/(k_norm*k_proj)
+          e2(2)=w2*w3/(k_norm*k_proj)
+          e2(3)=-(k_proj/k_norm)
+          
+          e1(1)= w2/k_proj
+          e1(2)=-w1/k_proj
+          
+          mod_const = exp(-0.5_mytype / WIDTH_F * (k_norm-X0)*(k_norm-X0))/k_norm
+          
+          call random_number(rand_ang)
+          psi_rnd = TWOPI*rand_ang(1)
+          two_phi_rnd = TWOPI*rand_ang(2)
+          
+          xsi1=cmplx(real(u(i,j,k))*e1(1)+real(v(i,j,k))*e1(2),&
+                  imag(u(i,j,k))*e1(1)+imag(v(i,j,k))*e1(2), mytype)
+          
+          xsi2=cmplx(real(u(i,j,k))*e2(1)+real(v(i,j,k))*e2(2)+real(w(i,j,k))*e2(3),&
+                  imag(u(i,j,k))*e2(1)+imag(v(i,j,k))*e2(2)+imag(w(i,j,k))*e2(3), mytype)
+          
+          numerator= sin(two_phi_rnd)*real(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*imag(xsi2) + cos(psi_rnd)*real(xsi2))
+          denominator= -sin(two_phi_rnd)*imag(xsi1)+ cos(two_phi_rnd)*(sin(psi_rnd)*real(xsi2) -cos(psi_rnd)*imag(xsi2))
+          
+          if(numerator==0._mytype.and.denominator==numerator) cycle
+          
+          theta1=atan(numerator/(denominator+1.e-20))
+          theta2=psi_rnd+theta1
+          
+          a_rnd = cmplx(cos(theta1),sin(theta1), mytype)*mod_const*sin(two_phi_rnd)
+          b_rnd = cmplx(cos(theta2),sin(theta2), mytype)*mod_const*cos(two_phi_rnd)
+          
+          fs_x(i,j,k) = cmplx(real(a_rnd)*e1(1)+real(b_rnd)*e2(1), imag(a_rnd)*e1(1)+imag(b_rnd)*e2(1), mytype)
+          fs_y(i,j,k) = cmplx(real(a_rnd)*e1(2)+real(b_rnd)*e2(2), imag(a_rnd)*e1(2)+imag(b_rnd)*e2(2), mytype)
+          fs_z(i,j,k) = cmplx(real(b_rnd)*e2(3)                  , imag(b_rnd)*e2(3), mytype)
+        
+        enddo
+        skip=0
+      enddo
+    enddo
+    
+    normaliz_fs = Spherical_mult(fs_x,fs_x,sp)+Spherical_mult(fs_y,fs_y,sp)+Spherical_mult(fs_z,fs_z,sp)
+    
+    !   Normalization such that
+    !     0.5 * < fi*fi > = Totf / Dt
+    
+    normaliz_fs = sqrt( 2.0_mytype*TOTF/(DT*normaliz_fs))
+    
+    fs_x = fs_x * normaliz_fs
+    fs_y = fs_y * normaliz_fs
+    fs_z = fs_z * normaliz_fs
+  
+  end subroutine Forcing_orig
+
 end module m_equations_terms

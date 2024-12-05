@@ -56,7 +56,7 @@ The executable `run3d` can perform simulation in single or double precision. All
 The build system is driven either by `CMake` or `Makefile`. However, the `Makefile` uses some CMake command line so it 
 must be installed.
 
-### 2decomp&FFT
+### Dependency: 2decomp&FFT
 Here a default procedure is described, for more information on how to build the 2DECOMP&FFT library 
 please see [INSTALL.md](INSTALL.md) in the 2decomp-fft folder.
 

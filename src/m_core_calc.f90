@@ -34,7 +34,9 @@ contains
     integer :: iter
     real(mytype) :: const_rk3(5), time, t_start, t_end, t_ave, tref
     character(len=5) :: iter_string
+    integer(8), dimension(:), allocatable :: linear_index
     integer, allocatable, dimension(:,:) :: trunc_index
+    real(mytype), dimension(:,:), allocatable :: forc_init
     ! In Physical space: Working arrays
     real(mytype), allocatable, dimension (:,:,:) :: work_xph,work_yph,work_zph
     ! In Spectral space: Working arrays
@@ -87,6 +89,8 @@ contains
       fs_x = (0.0_mytype,0.0_mytype)
       fs_y = (0.0_mytype,0.0_mytype)
       fs_z = (0.0_mytype,0.0_mytype)
+      
+      call Forcing_init(wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,linear_index,forc_init,sp)
     end if
     
     ! In case of a new run apply continuity, dealiasing, and compute ref. quant.
@@ -147,7 +151,7 @@ contains
       else
         ! ACTIVE FORCING
         call Rk3_f(rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,fs_x,fs_y,fs_z,&
-                const_rk3,trunc_index,ph,sp)
+                const_rk3,trunc_index,linear_index,forc_init,ph,sp)
       end if
       
       ! Calculating and writing statistics during time advancement
@@ -363,10 +367,12 @@ contains
   !
   ! 3 step Runge-Kutta explicit time advancement with forcing
   !
-  subroutine Rk3_f(rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,&
-          fs_x,fs_y,fs_z,const_rk3,trunc_index,ph,sp)
+  subroutine Rk3_f(rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph,fs_x,fs_y,fs_z,&
+          const_rk3,trunc_index,linear_index,forc_init,ph,sp)
     
+    integer(8), dimension(:), allocatable, intent(IN) :: linear_index
     integer, allocatable, dimension(:,:), intent(IN) :: trunc_index
+    real(mytype), dimension(:,:), allocatable, intent(IN) :: forc_init
     real(mytype), intent(IN) :: const_rk3(5)
     ! In Physical space: Working arrays
     real(mytype), dimension (:,:,:) :: work_xph,work_yph,work_zph
@@ -380,7 +386,7 @@ contains
     call RHS(u,v,w,ur,vr,wr,rhs_x,rhs_y,rhs_z,work_xsp1,work_ysp1,work_zsp1,work_xph,work_yph,work_zph, &
             wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,normaliz,trunc_index,ph,sp)
     
-    call Forcing(u,v,w,fs_x,fs_y,fs_z,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
+    call Forcing(u,v,w,fs_x,fs_y,fs_z,linear_index,forc_init,sp)
     
     u = u + const_rk3(1) * (rhs_x + fs_x)
     v = v + const_rk3(1) * (rhs_y + fs_y)
