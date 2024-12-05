@@ -1,6 +1,23 @@
-# SPECTRAL FULLY PERIODIC CODE
+# SPECTRAL-3D
 
-This README contains basic instructions for building the code and installing the 2DECOMP&FFT library.
+This README contains basic instructions for building the `Spectral-3D` code and installing the 2DECOMP&FFT library.
+
+## General Description
+
+Spectral code for 3D simulation of turbulent Newtonian incompressible flows in a periodic parallelepipedal domain 
+of equally spaced points. It solves the PDEs using the pseudo-spectral approach. In short, it projects the PDEs in the Fourier space transforming the equations 
+from differential to algebraic. 
+\
+It makes extensive use of the Discrete Fast Fourier Transform with the fftw 
+implementation in an MPI parallel environment. The domain is decomposed in pencil aligned along the x-direction in the physical space and along the 
+z-direction in the Fourier space. 
+\
+The flow supported in the current version are:
+- Homogeneus Isotropic Turbulence (HIT) with and without forcing;
+- Temporally evolving Planar Jets.
+
+The executable `run3d` can perform simulation in single or double precision. All inputs are taken form the `THI_PJET` file.
+
 
 ```
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -35,60 +52,63 @@ This README contains basic instructions for building the code and installing the
        X___________|__________|__________|_/____>      :    Z___________|__________|__________|_/____>
     X                                             Z    :  Z                                             X
 ```
-## General Description
+## Project Structure
 
-Spectral code for 3D simulation of turbulent Newtonian incompressible flows in a periodic parallelepipedal domain 
-of equally spaced points. It solves the PDEs using the pseudo-spectral approach. In short, it projects the PDEs in the Fourier space transforming the equations 
-from differential to algebraic. 
-\
-It makes extensive use of the Discrete Fast Fourier Transform with the fftw 
-implementation in an MPI parallel environment. The domain is decomposed in pencil aligned along the x-direction in the physical space and along the 
-z-direction in the Fourier space. 
-\
-The flow supported in the current version are:
-- Homogeneus Isotropic Turbulence (HIT) with and without forcing;
-- Temporally evolving Planar Jets.
+The project has the following structure:
 
-The executable `run3d` can perform simulation in single or double precision. All inputs are taken form the `THI_PJET` file.
+- **README.md**: The file you are reading now, which provides information about the project.
+- **build.conf**: The file with compilation options for the `Spectral-3D` code (virtually the only file that matters for normal use).
+- **src/**: Contains the source code of the project.
+  - **main.f90**: Main Fortran file of the program.
+  - **m_\*.f90**: Modules files with the needed procedures.
+- **bin/**: Where the executable is being built, together the input `THI_PJET` file.
+- **dependencies/**: Contains the additional libraries needed.
+  - **2decomp-fft**: Provides access to a pencil decompositions as well as FFTs. 
+    - **Makefile**: The file with the compilation options for the 2DECOMP&FFT library (virtually the only file that matters for normal use).
 
 ## Building
 
-The build system is driven either by `CMake` or `Makefile`. However, the `Makefile` uses some CMake command line so it 
-must be installed.
+The code build is driven by `make` compilation. 
 
-### Dependency: 2decomp&FFT
-Here a default procedure is described, for more information on how to build the 2DECOMP&FFT library 
-please see [INSTALL.md](INSTALL.md) in the 2decomp-fft folder.
+To get the code from Github:
+```
+git clone --recurse-submodules https://github.com/fortaia/Spectral-3D.git
+```
+and the code will be downloaded together with its dependencies. Key compiling parameters can be modified in 
+the `build.conf` file (for Spectral-3D) and `dependencies/2decomp-fft/Makefile` (for 2DECOMP&FFT library).
+Once the configuration files mentioned are ready first compile the library:
+```
+make libs
+```
+and then the code:
+```
+make
+```
+the executable `run3d` will be placed in the `bin` folder together with the input file `THI_PJET`.
+If a clean of `Spectral-3D` is needed:
+```
+make clean
+```
+will remove all the compilation files. Occasionally, a clean of the 2DECOMP&FFT library might be
+necessary:
+```
+make libsclean
+```
+## Running
+The `Spectral-3D` code makes extensive use of MPI. To run the executable navigate to the folder where the `run3d` 
+file is and use the appropriate MPI executor. A typical command is:
+```
+mpirun -np $number_of_cores_needed ./run3d
+```
+note that the input file `THI_PJET` must be in the same folder of the executable. All the simulation parameters are 
+specified in the `THI_PJET` file. The file is extensively commented and it is meant to be self-explanatory
+regarding the several options available.
 
-To download the library:
-```
-git clone https://github.com/2decomp-fft/2decomp-fft.git                                                                                                                                  
-```
-and an example of compilation and building could be:
-```
-cmake -S . -B ./build -DEVEN=ON -DOVERWRITE=ON -DDOUBLE_PREC=ON -DFFT_Choice=fftw_f03 -DFFTW_ROOT=/usr/local
-```
-Additional flags (that should be activated by default):
-```
- -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=./build/opt
-```
-in the directoy where the code has been build (e.g. ./build) type the last 2 commands to complete the process:
-``` 
-cmake --build .
-cmake --install .
-```
-The default location for `libdecomp2d.a` is `$path_to_build_directory/opt/lib` unless the variable `CMAKE_INSTALL_PREFIX` is modified.
-The module files generated by the build process will similarly be installed to `$path_to_build_directory/opt/include`, users of the library should add this to the include paths for their program.
+## Contributing
+The recommended strategy to contribute is to start with a [discussion](https://github.com/fortaia/Spectral-3D.git/discussions) 
+or to pick an existing issue. To modify or experiment with the code, fork the `Spectral-3D` github repository and 
+commit changes in a dedicated branch of your fork. When the modification is ready for review, one can 
+open a pull request. Pull requests must be focused, small, coherent and have a detailed description.
+The longer the pull request, the harder the review. Please empathise with your fellow contributors who are going to spend time reviewing your code.
 
-Occasionally a clean build is required, this can be performed by running
-```
-$ cmake --build $path_to_build_directory --target clean
-```
-### Spectral code
 
-Completed the 2DECOMP&FFT library install to build the code ... 
-
-### Contributing
-
-If you would like to contribute to the development of the 2DECOMP&FFT library or report a bug please refer to 
-the [Contributing section](Contribute.md)

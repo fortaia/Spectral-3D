@@ -52,13 +52,11 @@ LIB := $(patsubst %, lib%.a, $(NAME))
 DEPS := $(SRCS_DIR)/.depend.mk
 
 # Declare all public targets
-.PHONY: all clean allclean libs libsclean run
+.PHONY: all clean allclean libs libsclean 
 all: $(EXE)
 
 $(EXE): $(OBJS)
 	$(FC) $(FFLAGS) $^ $(LIBS) $(INCS) -o $(EXE)
-
-run: $(EXE)
 	@cp $(SRCS_DIR)/$(INPUT_FILE) $(EXE_DIR)
 	@printf "\nDefault input file $(INPUT_FILE) copied to run folder $(EXE_DIR)\n"
 
@@ -77,7 +75,7 @@ $(foreach dep, $(OBJS), $(eval $(dep): $($(dep))))
 
 # Cleanup, filter to avoid removing source code by accident
 clean:
-	$(RM) $(SRCS_DIR)/*.{i,mod,smod,d,o} $(EXE) $(DEPS)
+	$(RM) $(SRCS_DIR)/*.{i,mod,smod,d,o} $(EXE) $(DEPS) $(INPUT_FILE)
 
 allclean:
 	@make libsclean
