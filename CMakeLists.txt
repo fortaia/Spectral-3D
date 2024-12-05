@@ -1,69 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(Nuovo_2decomp Fortran)
 enable_language(Fortran)
-#
-### MPI Start ##
-#find_package(MPI REQUIRED)
-#if(NOT MPI_Fortran_FOUND)
-#    message(FATAL_ERROR "Could not find Fortran MPI.  Please set MPI_Fortran_COMPILER to point to the mpif90 wrapper.")
-#endif()
-#set(CMAKE_Fortran_COMPILER "mpif90")
-#include_directories(${MPI_Fortran_INCLUDE_PATH})
-#add_compile_options(${MPI_Fortran_COMPILE_FLAGS})
-#link_directories(${MPI_Fortran_LIBRARIES})
-### MPI End ##
-#
-#set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g3 -cpp -fbounds-check ")#-Wall
-##set (CMAKE_Fortran_FLAGS_DEBUG   "-fallow-argument-mismatch -Wall -cpp -O0 -g3 -fbounds-check -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan -fopenmp -Waliasing")
-#
-### 2decomp Start ##
-##set(F_OBJ ./2decomp_fft/src/decomp_2d.f90
-##          ./2decomp_fft/src/io_mpi.f90
-##          ./2decomp_fft/src/glassman.f90
-##          ./2decomp_fft/src/fft_fftw3.f90)
-##
-##add_library(2decomp_fft STATIC ${F_OBJ})
-##
-##target_compile_definitions(2decomp_fft PUBLIC -DOVERWRITE -DEVEN -DDOUBLE_PREC)
-##target_include_directories(2decomp_fft PUBLIC 2decomp_fft/build/opt/include)
-###target_compile_options(2decomp_fft PUBLIC  -g -Wall -Wextra -Warray-temporaries -Wconversion -fimplicit-none -fbacktrace -ffree-line-length-0 -fcheck=all -ffpe-trap=zero,overflow,underflow -finit-real=nan -fopenmp -Waliasing)
-##target_link_libraries(2decomp_fft PUBLIC 2decomp_fft/build/opt/lib)
-##
-#
-### 2decomp End ##
-#
-#####################################################
-#set(TARG "Nuovo_2decomp")
-#####################################################
-#set(SOURCE_FILES main.f90)
-#
-#if(${TARG} STREQUAL "run3d")
-#    set(SOURCE_FILES_loc
-#            shear.f90
-#            rkuvws.f90
-#            rkuvws_visc.f90
-#            forcing_pv.f90
-#            init_phys.f90
-#            init_pjet_phys.f90
-#            cut_sft_phys.f90
-#            cont.f90
-#            carreaustats.f90)
-#elseif(${TARG} STREQUAL "post3d")
-#    set(SOURCE_FILES_loc
-#            post.f90
-#            equilibrium.f90)
-#    set(HDF5_DIR 2dechdf5_link)
-#    include_directories(${HDF5_DIR}/include)
-#    include_directories(${HDF5_DIR}/lib)
-#    #set(FortHDF5_DIR 2dechdf5_fort_link)
-#    #include_directories(${FortHDF5_DIR})
-#    link_directories(${HDF5_DIR}/lib)
-#    set(libreria hdf5hl_fortran
-#            hdf5_fortran)
-#endif()
-#
-#add_executable(${TARG} ${SOURCE_FILES_loc} ${SOURCE_FILES})
-#target_link_libraries(${TARG} PUBLIC 2decomp_fft ${MPI_Fortran_LIBRARIES})
 
 # Set the version of the project
 set(PROJECT_VERSION "1.0")
