@@ -1,3 +1,6 @@
+!
+! MODULE purpose: Core calculations
+!
 module m_core_calc
   
   use m_glob_params
@@ -28,7 +31,7 @@ contains
   
   subroutine Core_calc(ph,sp)
     
-    use m_aux_phys, only: Stats_quant_init
+    use m_aux_phys, only: Stats_quant_init, Calc_kin_en_ph
     use m_io, only: Write_3d_velocities, Write_store_file, Read_store_file,Write_screen_forcing
     
     integer :: iter
@@ -47,7 +50,6 @@ contains
     !------------- Start subroutine -----------------------------
     
     if (nrank==0) then
-      
       write(*,*) '----------------------------------------------------'
       write(*,*)
       write(*,*) '  Starting CALCULATIONS                             '
@@ -57,7 +59,7 @@ contains
     
     call wavenum(wavenumG1,wavenumG2,wavenumG3)
     
-    normaliz = real(N1G*N2G*N3G,mytype)
+    normaliz = real(N1G,mytype)*real(N2G,mytype)*real(N3G,mytype)
     
     ! Calculating useful constants before the loop
     allocate(sq_wnumG1(size(wavenumG1)),sq_wnumG2(size(wavenumG2)),sq_wnumG3(size(wavenumG3)))
@@ -82,6 +84,7 @@ contains
     
     ! In case of active forcing
     if(IFORCE==1) then
+      
       call alloc_z(fs_x,sp,.true.)
       call alloc_z(fs_y,sp,.true.)
       call alloc_z(fs_z,sp,.true.)
@@ -91,16 +94,20 @@ contains
       fs_z = (0.0_mytype,0.0_mytype)
       
       call Forcing_init(wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,linear_index,forc_init,sp)
+      
     end if
     
     ! In case of a new run apply continuity, dealiasing, and compute ref. quant.
     if(JINIT==0) then
       
+      time = 0.0_mytype
+
       call Dealiasing_trunc(u, v, w, trunc_index,sp)
       call Continuity(u,v,w,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
+      
       ! Writing initial fields
       call Write_3d_velocities(trim(RESDAT)//"_00000",u,v,w,sp)
-      ! Calculating initial variables
+
       work_xsp1=u
       call decomp_2d_fft_3d(work_xsp1,ur)
       work_xsp1=v
@@ -110,18 +117,16 @@ contains
       
       call Stats_quant_init(ur,vr,wr,tref)
       
-      time = 0.0_mytype
     else
       ! In case of restart load previuosly calculated quantities
       call Read_store_file(time,tref,dt)
       if(IFORCE==1) call Random_number_gen_init()
     endif
-    
+   
     call Stat_run(work_xsp1,0,time,sp)
+    t_ave=0.0_mytype
     
     call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-    
-    t_ave=0.0_mytype
     
     ! -------------------------- CORE CYCLE ** START -------------------------------
     do iter=1,NTMAX
@@ -158,13 +163,20 @@ contains
       if (mod(iter,NOUT)==0) call Stat_run(work_xsp1,iter,time,sp)
       ! Calculating and writing planes during time advancement
       if (mod(iter,NOUTT)==0) then
+        work_xsp1=u
+        call decomp_2d_fft_3d(work_xsp1,ur)
+        work_xsp1=v
+        call decomp_2d_fft_3d(work_xsp1,vr)
+        work_xsp1=w
+        call decomp_2d_fft_3d(work_xsp1,wr)
+        call Calc_kin_en_ph(ur,vr,wr,normaliz)
         if(ISIMU/=0) then
           ! Print U-velocity
           work_xsp1=u
           call decomp_2d_fft_3d(work_xsp1,ur)
           write(iter_string, '(I5.5)') NTMAX
           call decomp_2d_write_plane(1, ur, 'plane_U_'//iter_string//'.raw',&
-                  opt_iplane=N3G / 2, opt_decomp=ph, opt_reduce_prec=.false.)
+                  opt_iplane=N3G/2, opt_decomp=ph, opt_reduce_prec=.true.)
           
           ! Calculate and print enstrophy
           call Calc_vorticity_sp(u,v,w,wavenumG1,wavenumG2,wavenumG3,work_xsp1,work_ysp1,work_zsp1,sp)
@@ -174,10 +186,11 @@ contains
           call decomp_2d_fft_3d(work_zsp1,work_zph)
           
           work_xph=(work_xph*work_xph + work_yph*work_yph + work_zph*work_zph) * 0.5_mytype
-          call decomp_2d_write_plane(1, ur, 'plane_enstr_'//iter_string//'.raw',&
-                  opt_iplane=N3G / 2, opt_decomp=ph, opt_reduce_prec=.false.)
+          call decomp_2d_write_plane(1, work_xph, 'plane_enstr_'//iter_string//'.raw',&
+                  opt_iplane=N3G/2, opt_decomp=ph, opt_reduce_prec=.true.)
         end if
       end if
+      
       ! Writing 3D fields at prescribed iteration
       if (mod(iter,JSAVE)==0.and.iter/=NTMAX) then
         write(iter_string, '(I5.5)') iter
@@ -229,7 +242,7 @@ contains
     
     write(iter_string, '(I5.5)') NTMAX
     call decomp_2d_write_plane(1, ur, 'plane_U_'//iter_string//'.raw',&
-            opt_iplane=N3G / 2, opt_decomp=ph, opt_reduce_prec=.false.)
+            opt_iplane=N3G / 2, opt_decomp=ph, opt_reduce_prec=.true.)
     
     ! Calculate and print enstrophy
     call Calc_vorticity_sp(u,v,w,wavenumG1,wavenumG2,wavenumG3,work_xsp1,work_ysp1,work_zsp1,sp)
@@ -240,8 +253,8 @@ contains
     
     work_xph=(work_xph*work_xph + work_yph*work_yph + work_zph*work_zph) * 0.5_mytype
     
-    call decomp_2d_write_plane(1, ur, 'plane_enstr_'//iter_string//'.raw',&
-            opt_iplane=N3G / 2, opt_decomp=ph, opt_reduce_prec=.false.)
+    call decomp_2d_write_plane(1, work_xph, 'plane_enstr_'//iter_string//'.raw',&
+            opt_iplane=N3G/2, opt_decomp=ph, opt_reduce_prec=.true.)
     ! ---------------------------------------------------------------------------
     
     ! DEALLOCATING arrays
@@ -265,6 +278,7 @@ contains
     type(decomp_info), pointer :: sp
     
     !------- Start procedure -------------------
+
     call Calc_kin_en_sp(u,v,w,work_xsp1)
     call Shell_average(work_xsp1,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp,count,sh_ave)
     
@@ -326,16 +340,16 @@ contains
     ! 2nd - step
     call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,work_xsp1,work_ysp1,work_zsp1,sp)
     
-    rhs_x = const_rk3(2) * rhs_x + work_xsp1 * dt
-    rhs_y = const_rk3(2) * rhs_y + work_ysp1 * dt
-    rhs_z = const_rk3(2) * rhs_z + work_zsp1 * dt
+    rhs_x = const_rk3(2) * rhs_x + work_xsp1
+    rhs_y = const_rk3(2) * rhs_y + work_ysp1
+    rhs_z = const_rk3(2) * rhs_z + work_zsp1
     
     call NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
             wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
     
-    rhs_x = rhs_x + work_xsp1 * dt
-    rhs_y = rhs_y + work_ysp1 * dt
-    rhs_z = rhs_z + work_zsp1 * dt
+    rhs_x = rhs_x + work_xsp1
+    rhs_y = rhs_y + work_ysp1
+    rhs_z = rhs_z + work_zsp1
     
     u = u + const_rk3(3) * rhs_x
     v = v + const_rk3(3) * rhs_y
@@ -345,16 +359,16 @@ contains
     ! 3rd - step
     call Dissipative(u,v,w,sq_wnumG1,sq_wnumG2,sq_wnumG3,work_xsp1,work_ysp1,work_zsp1,sp)
     
-    rhs_x = const_rk3(4) * rhs_x + work_xsp1 * dt
-    rhs_y = const_rk3(4) * rhs_y + work_ysp1 * dt
-    rhs_z = const_rk3(4) * rhs_z + work_zsp1 * dt
+    rhs_x = const_rk3(4) * rhs_x + work_xsp1
+    rhs_y = const_rk3(4) * rhs_y + work_ysp1
+    rhs_z = const_rk3(4) * rhs_z + work_zsp1
     
     call NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
             wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
     
-    rhs_x = rhs_x + work_xsp1 * dt
-    rhs_y = rhs_y + work_ysp1 * dt
-    rhs_z = rhs_z + work_zsp1 * dt
+    rhs_x = rhs_x + work_xsp1
+    rhs_y = rhs_y + work_ysp1
+    rhs_z = rhs_z + work_zsp1
     
     u = u + const_rk3(5) * rhs_x
     v = v + const_rk3(5) * rhs_y
@@ -423,7 +437,7 @@ contains
     
     call NonLin(u,v,w,ur,vr,wr,work_xph,work_yph,work_zph,work_xsp1,work_ysp1,work_zsp1,&
             wavenumG1,wavenumG2,wavenumG3,normaliz,trunc_index,ph,sp)
-    !                  nonlin  + forc
+    !                   nonlin  + forc
     rhs_x = rhs_x +  (work_xsp1 + fs_x) * dt
     rhs_y = rhs_y +  (work_ysp1 + fs_y) * dt
     rhs_z = rhs_z +  (work_zsp1 + fs_z) * dt
@@ -435,5 +449,5 @@ contains
     call Continuity(u,v,w,wavenumG1,wavenumG2,wavenumG3,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp)
   
   end subroutine Rk3_f
-
+  
 end module m_core_calc

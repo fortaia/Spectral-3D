@@ -1,3 +1,6 @@
+!
+! MODULE purpose: Group input/output procedures
+!
 module m_io
   
   implicit none

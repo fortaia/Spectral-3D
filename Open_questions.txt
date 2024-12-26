@@ -1,5 +1,6 @@
 OPEN QUESTIONS:
-1- When I make averages should I use the whole field or only what's inside the sphere?? CUBEvs SPHERE
+
+1- When I make averages in the Spectral sp. should I use the whole field or only what's inside the sphere?? CUBEvs SPHERE
 
 2- Spherical average I am using the number of point within a shell instead of the shell area. Probably not correct but I'll refine it in the future.
 
@@ -9,3 +10,10 @@ OPEN QUESTIONS:
 
 5- Discrepancies between mean kin. En. in physical and spectral space due to point 2 probably. Looked briefly into the 2decomp code and seen that it uses a flagave..
 
+6- forcing at 0 is 0, right?
+
+7- When enforcing continuity, why do we distribute the continuity residuals according to the wavenumbers?
+
+8- In the original code when computing wavenumbers the highest wavenumber is set to 0 in for each direction (k1,k2,k3).
+Book of Quateroni, Canuto, Zang.. mentions stability as it must be real and spurious oscillations in the imaginary part
+seems to lead to instability. Does it make sense?

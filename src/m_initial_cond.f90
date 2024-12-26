@@ -1,3 +1,6 @@
+!
+! MODULE purpose: Set the initial conditions
+!
 module m_initial_cond
   
   use MPI
@@ -18,9 +21,9 @@ module m_initial_cond
   
   !*** VELOCITY FIELDS ***
   ! In physical space
-  real(mytype), save, allocatable, dimension (:,:,:), public :: ur,vr,wr
+  real(mytype), allocatable, dimension (:,:,:), public :: ur,vr,wr
   ! In Spectral space
-  complex(mytype), save, allocatable, dimension (:,:,:), public :: u,v,w
+  complex(mytype), allocatable, dimension (:,:,:), public :: u,v,w
 
 contains
   !
@@ -31,6 +34,8 @@ contains
     use m_io
     
     type(decomp_info), pointer :: ph,sp
+    real(mytype), parameter :: TWOPI=6.28318530717958647692528676655900
+    ! ------------ Start subroutine ------------------
     
     ! input is X-pencil data
     call alloc_x(ur, ph, .true.)
@@ -52,9 +57,10 @@ contains
       endif
       
       if(ISIMU==0) then
+        
         ! Initializing the field as a random noise with imposed spectrum
         call Noise(ph,sp)
-      
+        
       else
         !Calculating noise
         call Noise(ph,sp)
@@ -64,12 +70,12 @@ contains
         
         !Transform into spectral space
         call decomp_2d_fft_3d(ur,u)
-        call decomp_2d_fft_3d(vr,w)
+        call decomp_2d_fft_3d(vr,v)
         call decomp_2d_fft_3d(wr,w)
         !DFT Normalization
-        u=u/(real(N1G, mytype) * real(N2G, mytype) * real(N3G, mytype))
-        v=v/(real(N1G, mytype) * real(N2G, mytype) * real(N3G, mytype))
-        w=w/(real(N1G, mytype) * real(N2G, mytype) * real(N3G, mytype))
+        u=u/real(N1G*N2G*N3G, mytype)
+        v=v/real(N1G*N2G*N3G, mytype)
+        w=w/real(N1G*N2G*N3G, mytype)
       
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -207,7 +213,6 @@ contains
           k_proj=sqrt(wrk1b+wrk2b)       + 1.e-10
           
           ! Generate random number
-!          alpha_rnd=Random_number_gen()
           call random_number(alpha_rnd)
           alpha_rnd=TWOPI*alpha_rnd
           
@@ -320,6 +325,5 @@ contains
     enddo
   
   end subroutine Noise_weight
-
 
 end module m_initial_cond

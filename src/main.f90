@@ -1,75 +1,4 @@
 program Spectral_3D
-    
-    !* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    !       A NAVIER-STOKES SOLVER FOR 3D FULLY PERIODIC COMPUTATIONS      *
-    !       USING MPI/2DECOMP WITH X (Real) TO Z (Spectral) PENCIL         *
-    !       ARRANGEMENTS                                                   *
-    !                                                                      *
-    !* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-    !
-    ! ======================================================================
-    !
-    !       nrank numbers (0=master) - PROCESS ORGANIZATION
-    !
-    !       Example of a X - pencil decomposition
-    !       with P_row=2, P_col=3 (nprocess=2x3=6)
-    !
-    ! ======================================================================
-    !
-    !                          PHYSICAL SPACE
-    !
-    !                 ----------------------------------
-    !                /           /          /          /|
-    !               /           /          /          / |
-    !              /           /          /          /  |
-    !             /           /          /          /   |
-    !            /           /          /          /    |
-    !           /           /          /          /     |
-    !    Y  ^  /           /          /          /     /|
-    !       | /           /          /          /     / |
-    !       |/           /          /          /     /  |
-    !       |----------------------------------     /   |
-    !       |           |          |          |    /    |
-    !       |           |          |          |   /     |
-    !       |     3     |     4    |     5    |  /     /
-    !       |           |          |          | /     /
-    !       |-----------|----------|-----------/     /
-    !       |    /      |          |          |     /
-    !       |   /       |          |          |    /
-    !       |  /   0    |     1    |     2    |   /
-    !       | /         |          |          |  /
-    !       X___________|__________|__________|_/____>
-    !    X                                             Z
-    !
-    !
-    !
-    !                          FOURIER SPACE
-    !
-    !                 ----------------------------------
-    !                /           /          /          /|
-    !               /           /          /          / |
-    !              /           /          /          /  |
-    !             /           /          /          /   |
-    !            /           /          /          /    |
-    !           /           /          /          /     |
-    !    Y  ^  /           /          /          /     /|
-    !       | /           /          /          /     / |
-    !       |/           /          /          /     /  |
-    !       |----------------------------------     /   |
-    !       |           |          |          |    /    |
-    !       |           |          |          |   /     |
-    !       |     3     |     4    |     5    |  /     /
-    !       |           |          |          | /     /
-    !       |-----------|----------|-----------/     /
-    !       |           |          |          |     /
-    !       |           |          |          |    /
-    !       |     0     |     1    |     2    |   /
-    !       |           |          |          |  /
-    !       Z___________|__________|__________|_/____>
-    !    Z                                             X
-    !
-    !
-    ! ///////////////////////////////////////////////////// !
 
     use decomp_2d_mpi
     use decomp_2d_fft
@@ -86,14 +15,8 @@ program Spectral_3D
 !!!!!!!!!!!!!!!!!!! Variable Declaration START !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     !****** 2DECOMP *******
-    ! LOCAL GRID SIZE (NOTE: row*col = numprocs when running.)
-    ! NOTE: 0*0 SELF SELECTS (MOST LIKELY) BEST GRID - AUTO-TUNNING
-    ! INTEGER :: P_row , P_col
     type(decomp_info), pointer :: ph => null(), sp => null()
-
-    ! LOCAL GRID SIZE (NOTE: row*col = numprocs when running.)
-    ! NOTE: 0*0 SELF SELECTS (MOST LIKELY) BEST GRID - AUTO-TUNNING
-    ! INTEGER :: P_row , P_col
+    
     logical, dimension(3) :: periodic_bc
     
 !!!!!!!!!!!!!!!!!!! Variable Declaration END !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -128,7 +51,6 @@ program Spectral_3D
     ! Pointers for pencils dimensions
     ph => decomp_2d_fft_get_ph()
     sp => decomp_2d_fft_get_sp()
-    
     
     if (nrank==0) then
         

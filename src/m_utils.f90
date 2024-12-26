@@ -1,3 +1,6 @@
+!
+! MODULE purpose: Group fundamental procedures
+!
 module m_utils
   
   implicit none
@@ -94,7 +97,6 @@ module m_utils
       integer(8) :: count
       integer, allocatable, dimension(:,:), intent(IN) :: trunc_index
       complex(mytype), dimension(sp%zst(1):,sp%zst(2):,sp%zst(3):), intent(INOUT) :: field1,field2,field3
-      
       
       !------------ Start subroutine -------------------
       

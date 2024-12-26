@@ -1,3 +1,6 @@
+!
+! MODULE purpose: Group useful procedures for calculations in physical space
+!
 module m_aux_phys
   
   use m_glob_params
@@ -7,14 +10,14 @@ module m_aux_phys
   
   private
   
-  public :: Variance_ph, Stats_quant_init
+  public :: Variance_ph, Stats_quant_init, Calc_kin_en_ph
   
   ! Generic interface to handle multiple data types
   interface Variance_ph
     module procedure Variance_ph_1field
     module procedure Variance_ph_2fields
   end interface
-  
+
 contains
   
   ! Calculate variance var(u)=mean(u**2)-mean(u)**2
@@ -29,7 +32,7 @@ contains
     ! COMPUTE MEAN AND TAKE MEAN OUT
     loc_sum(1) = sum(field1*field1)
     loc_sum(2) = sum(field1)
-
+    
     call MPI_ALLREDUCE(loc_sum,gl_sum,2,real_type,MPI_SUM, MPI_COMM_WORLD,ierr)
     
     gl_sum(2) = gl_sum(2)/real(N1G*N2G*N3G,mytype)
@@ -38,7 +41,7 @@ contains
     variance = gl_sum(1) - gl_sum(2)*gl_sum(2)
     
     return
-    
+  
   end function Variance_ph_1field
   
   ! Calculate variance var(uv)=mean(u*v)-mean(u)*mean(v)
@@ -66,6 +69,7 @@ contains
   
   end function Variance_ph_2fields
   
+  ! Calculate reference quantities at the beginning of a new simulation
   subroutine Stats_quant_init(ur,vr,wr,Tref)
     
     real(mytype), dimension(:,:,:), intent(IN) :: ur,vr,wr
@@ -95,8 +99,25 @@ contains
       Vchar = sqrt(uprime2 + vprime2 + wprime2)
       Tref  = TWOPI / Vchar
     end if
-    
+  
   end subroutine Stats_quant_init
   
+  subroutine Calc_kin_en_ph(ur,vr,wr,normaliz)
+    
+    use decomp_2d_mpi, only: mytype, real_type, nrank
+    use MPI
+    
+    real(mytype), contiguous, dimension(:,:,:), intent(IN) :: ur,vr,wr
+    
+    real(mytype) :: kin_en_loc, kin_en, normaliz
+    
+    !---------   Subroutine start  ------------------
+    
+    kin_en_loc=sum(ur*ur)+sum(vr*vr)+sum(wr*wr)
+    call MPI_Reduce(kin_en_loc, kin_en, 1, real_type, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    
+    if (nrank==0) print*, kin_en/(2.0_mytype*normaliz)
   
+  end subroutine Calc_kin_en_ph
+
 end module m_aux_phys

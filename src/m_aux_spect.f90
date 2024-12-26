@@ -1,3 +1,6 @@
+!
+! MODULE purpose: Group useful procedures for calculations in spectral space
+!
 module m_aux_spect
   
   implicit none
@@ -201,12 +204,13 @@ contains
     
     !---------   Subroutine start  ------------------
     
+    kin_en%im = 0.0_mytype
     kin_en%re = 0.5_mytype * (u%re*u%re + u%im*u%im + &
             v%re*v%re + v%im*v%im + &
             w%re*w%re + w%im*w%im )
   end subroutine Calc_kin_en_sp
   !
-  ! Calculates vorticity in spectral space
+  ! Calculates vorticity in spectral space -> OUT var: vortx,vorty,vortz
   !
   subroutine Calc_vorticity_sp(u,v,w,wavenumG1,wavenumG2,wavenumG3,vortx,vorty,vortz,sp)
     
@@ -233,8 +237,8 @@ contains
         do i=sp%zst(1),sp%zen(1)
           dummy1=wavenumG1(i)
           
-          Ru=real(u(i,j,k));  Rv=real(v(i,j,k));  Rw=real(w(i,j,k))
-          Iu=aimag(u(i,j,k)); Iv=aimag(v(i,j,k)); Iw=aimag(w(i,j,k))
+          Ru=u(i,j,k)%RE; Rv=v(i,j,k)%RE; Rw=w(i,j,k)%RE
+          Iu=u(i,j,k)%IM; Iv=v(i,j,k)%IM; Iw=w(i,j,k)%IM
           
           ! Calculate real and imaginary parts directly to avoid complex multiplication overhead
           vortx(i,j,k) = cmplx(-Iw * dummy2 + Iv * dummy3, Rw * dummy2 - Rv * dummy3, mytype)

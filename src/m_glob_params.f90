@@ -1,5 +1,7 @@
-! Module for global parameters.
-
+!
+! MODULE purpose: Define global INPUT parameters. Those are then initialized by the input file.
+!                 (All variables are written entirely in uppercase letters)
+!
 module m_glob_params
     
     use decomp_2d_constants, only: mytype
