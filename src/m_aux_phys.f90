@@ -116,7 +116,7 @@ contains
     kin_en_loc=sum(ur*ur)+sum(vr*vr)+sum(wr*wr)
     call MPI_Reduce(kin_en_loc, kin_en, 1, real_type, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
     
-    if (nrank==0) print*, kin_en/(2.0_mytype*normaliz)
+    if (nrank==0) print*,'Mean kinetic energy = ', kin_en/(2.0_mytype*normaliz)
   
   end subroutine Calc_kin_en_ph
 

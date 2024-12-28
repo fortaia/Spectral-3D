@@ -124,6 +124,8 @@ contains
     endif
    
     call Stat_run(work_xsp1,0,time,sp)
+    call Calc_kin_en_ph(ur,vr,wr,normaliz)
+    
     t_ave=0.0_mytype
     
     call MPI_BARRIER(MPI_COMM_WORLD,ierr)
@@ -159,6 +161,11 @@ contains
                 const_rk3,trunc_index,linear_index,forc_init,ph,sp)
       end if
       
+      time = time + dt
+      
+      t_end = MPI_WTIME() - t_start
+      t_ave = t_ave + t_end
+
       ! Calculating and writing statistics during time advancement
       if (mod(iter,NOUT)==0) call Stat_run(work_xsp1,iter,time,sp)
       ! Calculating and writing planes during time advancement
@@ -169,7 +176,6 @@ contains
         call decomp_2d_fft_3d(work_xsp1,vr)
         work_xsp1=w
         call decomp_2d_fft_3d(work_xsp1,wr)
-        call Calc_kin_en_ph(ur,vr,wr,normaliz)
         if(ISIMU/=0) then
           ! Print U-velocity
           work_xsp1=u
@@ -197,11 +203,6 @@ contains
         call Write_3d_velocities(trim(RESDAT)//"_"//iter_string,u,v,w,sp)
         if(nrank==0) call Write_store_file('store_'//iter_string//'.info',time,tref,dt)
       end if
-      
-      time = time + dt
-      
-      t_end = MPI_WTIME() - t_start
-      t_ave = t_ave + t_end
       
       ! Write to screen
       if (nrank==0) then
@@ -269,7 +270,7 @@ contains
     use m_io, only: Write_ascii
     
     integer,intent(IN) :: iter
-    integer, dimension(N2G/2+1) :: count,count_g
+    integer, dimension(N2G/2+1) :: pnt_count,pnt_count_g
     real(mytype),intent(IN) :: time
     real(mytype) :: kin_en, diss, u_rms_sq, rey_lambda, eta, l_int, kmax_eta, two_third, PI_half
     real(mytype), dimension(N2G/2+1) :: sh_ave,en_spect
@@ -280,13 +281,13 @@ contains
     !------- Start procedure -------------------
 
     call Calc_kin_en_sp(u,v,w,work_xsp1)
-    call Shell_average(work_xsp1,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp,count,sh_ave)
+    call Shell_average(work_xsp1,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp,pnt_count,sh_ave)
     
-    call MPI_Reduce(count, count_g, N2G/2+1, MPI_INTEGER, MPI_SUM, nproc-1, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(pnt_count, pnt_count_g, N2G/2+1, MPI_INTEGER, MPI_SUM, nproc-1, MPI_COMM_WORLD, ierr)
     call MPI_Reduce(sh_ave, en_spect, N2G/2+1, real_type, MPI_SUM, nproc-1, MPI_COMM_WORLD, ierr)
     
     if(nrank==nproc-1) then
-      en_spect=en_spect/real(count_g,mytype)
+      
       write(iter_string, '(I5.5)') iter
       call Write_ascii('k_Ek_'//iter_string//'.dat',wavenumG1,en_spect)
       

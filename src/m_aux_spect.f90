@@ -117,7 +117,7 @@ contains
   !
   ! Calculates shell averages of a field
   !
-  subroutine Shell_average(in_var,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp,count,out_var)
+  subroutine Shell_average(in_var,sq_wnumG1,sq_wnumG2,sq_wnumG3,sp,counter,out_var)
     
     use m_glob_params, only: N2G
     use decomp_2d_mpi, only: mytype
@@ -126,7 +126,7 @@ contains
     type(decomp_info), pointer :: sp
     
     integer :: i,j,k,wave
-    integer, dimension(N2G/2+1), intent(OUT) :: count
+    integer, dimension(N2G/2+1), intent(OUT) :: counter
     real(mytype) :: wave_radius,sq_w2,sq_w3,symm_factor
     real(mytype), contiguous, dimension(:), intent(IN) :: sq_wnumG1,sq_wnumG2,sq_wnumG3
     real(mytype), dimension(N2G/2+1), intent(OUT) :: out_var
@@ -134,7 +134,7 @@ contains
     
     !---------   Subroutine start  ------------------
     
-    count = 0
+    counter = 0
     out_var = 0.0_mytype
     
     do k=sp%zst(3),sp%zen(3)
@@ -152,7 +152,7 @@ contains
           if (wave>N2G/2) cycle
           ! Accumulating quantities in array
           out_var(wave+1) = out_var(wave+1) + real(in_var(i,j,k)) * symm_factor
-          count(wave+1) = count(wave+1) + 1 * int(symm_factor)
+          counter(wave+1) = counter(wave+1) + 1 * int(symm_factor)
           
         enddo
       enddo
