@@ -2,13 +2,14 @@ OPEN QUESTIONS:
 
 1- When I make averages in the Spectral sp. should I use the whole field or only what's inside the sphere?? CUBEvs SPHERE
 
-2- Spherical average I am using the number of point within a shell instead of the shell area. Probably not correct but I'll refine it in the future.
+2- Spherical average I am using the number of point within a shell instead of the shell area. Probably not correct??
 
 3 - in cfl routine why? Calculate local MAX : why not * 1/3 ZZZZ
 
-4- truncating the tnl only...does it make sense?
+4- truncating the tnl only...does it make sense? Probably not..
 
-5- Discrepancies between mean kin. En. in physical and spectral space due to point 2 probably. Looked briefly into the 2decomp code and seen that it uses a flagave..
+5- Discrepancies between dissipation rate in physical and spectral space. Similar values (and discrepancies exist in the
+original code)
 
 6- forcing at 0 is 0, right?
 
